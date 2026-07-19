@@ -1,0 +1,24 @@
+# Supabase Configuration
+
+[api]
+enabled = true
+max_body_size = 20  # in MB
+default_query_only = false
+
+[db]
+major_version = 15
+shadow_database_url = "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+
+[realtime]
+enabled = true
+max_bytes_per_second = 1000000
+
+[studio]
+enabled = true
+api_url = "http://localhost:54321"
+openapi_url = "http://localhost:54320"
+
+[inbucket]
+enabled = true
+smtp_port = 54325
+pop3_port = 55000

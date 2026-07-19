@@ -1,0 +1,40 @@
+name: Deploy to Supabase
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+      - 'supabase/config.toml'
+  workflow_dispatch:
+
+jobs:
+  deploy-database:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Supabase CLI
+        run: npm install -D supabase --legacy-peer-deps
+
+      - name: Push migrations to Supabase
+        run: |
+          npx supabase db push \
+            --db-url ${{ secrets.SUPABASE_DB_URL }} \
+            --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Notify on success
+        if: success()
+        run: echo "✅ Database migrations deployed to Supabase!"
+
+      - name: Notify on failure
+        if: failure()
+        run: echo "❌ Database migration failed!"
