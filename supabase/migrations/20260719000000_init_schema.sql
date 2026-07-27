@@ -29,20 +29,42 @@ CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
 
--- Users can only read/write their own data
-CREATE POLICY IF NOT EXISTS "Users can read own data"
-  ON users FOR SELECT
-  USING (auth.uid() = id);
+-- Users can only read their own data
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can read own data') THEN
+    CREATE POLICY "Users can read own data"
+      ON users FOR SELECT
+      USING (auth.uid() = id);
+  END IF;
+END $$;
 
-CREATE POLICY IF NOT EXISTS "Users can update own data"
-  ON users FOR UPDATE
-  USING (auth.uid() = id);
+-- Users can only update their own data
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can update own data') THEN
+    CREATE POLICY "Users can update own data"
+      ON users FOR UPDATE
+      USING (auth.uid() = id);
+  END IF;
+END $$;
 
--- Sessions policies
-CREATE POLICY IF NOT EXISTS "Users can read own sessions"
-  ON sessions FOR SELECT
-  USING (auth.uid() = user_id);
+-- Users can only read their own sessions
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can read own sessions') THEN
+    CREATE POLICY "Users can read own sessions"
+      ON sessions FOR SELECT
+      USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY IF NOT EXISTS "Users can delete own sessions"
-  ON sessions FOR DELETE
-  USING (auth.uid() = user_id);
+-- Users can only delete their own sessions
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can delete own sessions') THEN
+    CREATE POLICY "Users can delete own sessions"
+      ON sessions FOR DELETE
+      USING (auth.uid() = user_id);
+  END IF;
+END $$;
