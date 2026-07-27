@@ -1,0 +1,44 @@
+import { jwtDecode } from 'jwt-decode';
+
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL;
+
+export const getGoogleAuthUrl = () => {
+  const params = new URLSearchParams({
+    client_id: GOOGLE_CLIENT_ID!,
+    redirect_uri: `${APP_URL}/auth/callback`,
+    response_type: 'code',
+    scope: 'openid email profile',
+    access_type: 'offline',
+    prompt: 'consent',
+  });
+
+  return `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+};
+
+export const exchangeCodeForToken = async (code: string) => {
+  const response = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: GOOGLE_CLIENT_ID!,
+      client_secret: GOOGLE_CLIENT_SECRET!,
+      code,
+      grant_type: 'authorization_code',
+      redirect_uri: `${APP_URL}/auth/callback`,
+    }),
+  });
+
+  if (!response.ok) throw new Error('Failed to exchange code for token');
+  return response.json();
+};
+
+export const getUserInfo = (idToken: string) => {
+  const decoded = jwtDecode<{
+    email: string;
+    name: string;
+    picture: string;
+  }>(idToken);
+  return decoded;
+};
