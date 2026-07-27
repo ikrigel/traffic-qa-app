@@ -72,21 +72,9 @@ const config: Config = {
           '100%': { transform: 'translateY(0)', opacity: '1' },
         },
       },
-      typography: {
-        DEFAULT: {
-          css: {
-            color: 'rgb(var(--color-text) / 1)',
-            fontSize: '1rem',
-            lineHeight: '1.5',
-          },
-        },
-      },
     },
   },
-  plugins: [
-    require('@tailwindcss/typography'),
-    require('@tailwindcss/forms'),
-  ],
+  plugins: [],
 };
 
 export default config;
