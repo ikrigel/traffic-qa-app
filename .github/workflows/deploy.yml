@@ -44,5 +44,6 @@ jobs:
 
       - name: Notify on failure
         if: ${{ needs.deploy.result == 'failure' }}
-        run: echo "❌ Deployment to Vercel failed!"
-        exit: 1
+        run: |
+          echo "❌ Deployment to Vercel failed!"
+          exit 1
