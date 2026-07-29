@@ -2,12 +2,13 @@ import { jwtDecode } from 'jwt-decode';
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL;
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:3000';
 
 export const getGoogleAuthUrl = () => {
+  const redirectUri = `${APP_URL}/auth/callback`;
   const params = new URLSearchParams({
     client_id: GOOGLE_CLIENT_ID!,
-    redirect_uri: `${APP_URL}/auth/callback`,
+    redirect_uri: redirectUri,
     response_type: 'code',
     scope: 'openid email profile',
     access_type: 'offline',
@@ -18,6 +19,7 @@ export const getGoogleAuthUrl = () => {
 };
 
 export const exchangeCodeForToken = async (code: string) => {
+  const redirectUri = `${APP_URL}/auth/callback`;
   const response = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -26,7 +28,7 @@ export const exchangeCodeForToken = async (code: string) => {
       client_secret: GOOGLE_CLIENT_SECRET!,
       code,
       grant_type: 'authorization_code',
-      redirect_uri: `${APP_URL}/auth/callback`,
+      redirect_uri: redirectUri,
     }),
   });
 
