@@ -1,6 +1,8 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
+import QuestionList from '@/components/QuestionList';
+import { TRAFFIC_LAW_QUESTIONS } from '@/lib/questions';
 
 export default function Home() {
   const { user, loading, login, logout } = useAuth();
@@ -83,11 +85,13 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Coming Soon */}
-              <div className="bg-yellow-50 rounded-lg p-6 border border-yellow-200">
-                <p className="text-center text-gray-700">
-                  ✨ <span className="font-semibold">Coming Soon:</span> Q&A questions, theme switching, and progress tracking!
-                </p>
+              {/* Questions Section */}
+              <div className="mt-8">
+                <h3 className="text-2xl font-bold mb-6 text-gray-800">📚 Traffic Law Questions</h3>
+                <QuestionList
+                  questions={TRAFFIC_LAW_QUESTIONS}
+                  showAnswers={false}
+                />
               </div>
             </div>
           )}

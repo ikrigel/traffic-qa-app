@@ -233,3 +233,11 @@ export const getQuestionsByCategory = (category: string): Question[] => {
 export const getCategories = (): string[] => {
   return [...new Set(QUESTIONS.map(q => q.category))];
 };
+
+// Export for QuestionCard component
+export const TRAFFIC_LAW_QUESTIONS = QUESTIONS.map(q => ({
+  id: q.id,
+  question: q.english,
+  answer: q.answer,
+  priority: q.important,
+}));
