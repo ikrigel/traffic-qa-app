@@ -105,57 +105,106 @@ CREATE TABLE sessions (
 
 ## Authentication Flow
 1. User clicks "Login with Gmail"
-2. OAuth callback stores/retrieves user in Supabase
-3. Device ID generated (localStorage + fingerprint)
-4. Session token stored with device association
-5. Persistent login maintained across sessions
-6. New device requires re-login
+2. Redirected to Google OAuth consent screen
+3. OAuth callback at `/auth/callback` exchanges code for token
+4. User stored/retrieved in Supabase users table
+5. Session token created and stored in httpOnly cookie
+6. User email displayed on dashboard
+7. Logout clears session cookie
+
+## Authentication Setup
+1. Google Cloud Console:
+   - OAuth 2.0 Client ID (Web application)
+   - Authorized JavaScript origins: `https://traffic-qa-app.vercel.app`, `http://localhost:3000`
+   - Authorized redirect URIs: `https://traffic-qa-app.vercel.app/auth/callback`, `http://localhost:3000/auth/callback`
+   - OAuth consent screen: **Published to production**
+
+2. Supabase:
+   - Database: PostgreSQL with users and sessions tables
+   - RLS policies: Each user can only access their own data
+   - Schema deployed via SQL migrations in `supabase/migrations/`
+
+3. Environment Variables (Vercel & GitHub Actions):
+   - `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anon key
+   - `SUPABASE_SERVICE_ROLE_KEY` - Service role key (server-side only)
+   - `GOOGLE_CLIENT_ID` - Google OAuth Client ID
+   - `GOOGLE_CLIENT_SECRET` - Google OAuth Client Secret
+   - `JWT_SECRET` - Session token signing key
+   - `NEXT_PUBLIC_APP_URL` - App URL (http://localhost:3000 or Vercel URL)
 
 ## Development Workflow
 
-### Setup
+### Local Setup
 ```bash
-git clone <repo>
-npm install
+# Clone and install
+git clone https://github.com/ikrigel/traffic-qa-app.git
+cd traffic-qa-app
+npm install --legacy-peer-deps
+
+# Create .env.local from .env.example
 cp .env.example .env.local
+
+# Fill in environment variables from Supabase and Google Cloud Console
+# NEXT_PUBLIC_SUPABASE_URL=
+# NEXT_PUBLIC_SUPABASE_ANON_KEY=
+# SUPABASE_SERVICE_ROLE_KEY=
+# GOOGLE_CLIENT_ID=
+# GOOGLE_CLIENT_SECRET=
+# JWT_SECRET=
+# NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Start dev server
 npm run dev
+# Visit http://localhost:3000
 ```
 
-### Environment Variables
-```
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-```
-
-### Commands
-- `npm run dev` - Start dev server
+### Available Commands
+- `npm run dev` - Start Next.js dev server (port 3000)
 - `npm run build` - Build for production
-- `npm run test` - Run tests
+- `npm run start` - Start production server
 - `npm run lint` - Run ESLint
-- `npm run type-check` - TypeScript check
+- `npm run type-check` - TypeScript type checking
+- `npm run test` - Run Vitest test suite
+- `npm run format` - Format code with Prettier
+
+### Testing Locally
+1. Start dev server: `npm run dev`
+2. Visit http://localhost:3000
+3. Click "Login with Gmail"
+4. Verify OAuth redirects and user appears in Supabase
+5. Check httpOnly auth cookie in browser DevTools
 
 ## GitHub Actions Workflows
 
 ### Test Workflow (.github/workflows/test.yml)
-- Runs on every push to main
-- Runs unit and integration tests
-- Checks TypeScript compilation
-- Runs linter
+- Runs on every push to main and PRs
+- Installs dependencies with `npm install --legacy-peer-deps`
+- Runs ESLint (`npm run lint`)
+- Type-checks TypeScript (`npm run type-check`)
+- Builds project (`npm run build`)
+- All tests must pass before Vercel deployment
 
-### Deploy Workflow (.github/workflows/deploy.yml)
-- Triggers after tests pass
-- Deploys to Vercel on push to main
-- Auto-deploys on PR merge
+**Required GitHub Actions Secrets:**
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- `JWT_SECRET`
 
 ## Deployment to Vercel
-1. Connect GitHub repo to Vercel
-2. Set environment variables in Vercel dashboard
-3. GitHub Actions will auto-deploy on main push
-4. Preview deployments for PRs
+1. GitHub repo connected to Vercel project
+2. Environment variables set in Vercel dashboard (Production environment)
+3. GitHub Actions test workflow runs on every push
+4. Once tests pass, Vercel auto-deploys
+5. Dynamic routes configured to prevent static generation errors
+
+**Vercel Environment Variables (Production):**
+- All 6 variables from GitHub Actions secrets
+- `NEXT_PUBLIC_APP_URL` = `https://traffic-qa-app.vercel.app`
+
+**Deployment Status:** Live at https://traffic-qa-app.vercel.app
 
 ## File Size Constraints
 Every component/module must stay under 250 lines:
@@ -203,11 +252,56 @@ Every component/module must stay under 250 lines:
 - Backup database regularly
 - Monitor error logs via Vercel dashboard
 
-## Future Enhancements
-- Spaced repetition algorithm
-- Progress tracking
-- Practice tests with scoring
-- Bookmarks/favorites
-- Offline mode with PWA
-- Multi-language support
+## Current Implementation Status
+
+### ✅ Implemented
+- Next.js 14 app with TypeScript
+- Gmail OAuth authentication flow
+- Session management with httpOnly cookies
+- Supabase database integration
+- User authentication and persistence
+- Home page with login/logout buttons
+- GitHub Actions CI/CD pipeline
+- Vercel deployment automation
+- ESLint and TypeScript type checking
+- Dynamic route handling for OAuth callback
+
+### 🔄 In Progress / To Implement
+- Question database display and fetching
+- Q&A card components with question/answer toggle
+- Theme switching (dark/light/auto modes)
+- Settings modal (theme, show answers toggle)
+- About modal with app information
+- Question filtering and search
+- Progress tracking and bookmarks
+- Test suite for components and utilities
+
+### 📋 Planned Enhancements
+- Spaced repetition algorithm for learning optimization
+- Progress tracking and analytics
+- Practice tests with scoring system
+- Bookmark/favorites functionality
+- Offline mode with Progressive Web App (PWA)
+- Multi-language support (Hebrew/English)
 - Admin dashboard for question management
+- Mobile app version (React Native)
+
+## Troubleshooting
+
+### OAuth Login Issues
+1. Verify Google OAuth consent screen is published to production
+2. Check Authorized JavaScript origins and redirect URIs in Google Cloud Console
+3. Ensure environment variables are set correctly in Vercel
+4. Wait 5-10 minutes for Google to apply configuration changes
+
+### Build Failures
+1. Ensure all required environment variables are set in GitHub Actions secrets
+2. Check `npm run type-check` passes locally
+3. Verify `npm run lint` passes locally
+4. Make sure Next.js dynamic routes are configured with `export const dynamic = 'force-dynamic'`
+
+### Database Connection Issues
+1. Verify Supabase credentials in `.env.local`
+2. Check that database schema is deployed (users and sessions tables exist)
+3. Verify RLS policies allow your user to access data
+4. Check Supabase dashboard for any connection errors
