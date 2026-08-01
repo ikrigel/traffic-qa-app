@@ -14,9 +14,46 @@ html {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-size: 16px;
+}
+
+@media (max-width: 640px) {
+  html {
+    font-size: 15px;
+  }
 }
 
 body {
   background-color: #ffffff;
   color: #1f2937;
+  overflow-x: hidden;
+}
+
+/* Ensure links and buttons are at least 44px for touch */
+button, a, input {
+  min-height: 2.75rem;
+  @apply text-base;
+}
+
+@media (max-width: 640px) {
+  button, a, input {
+    min-height: 2.5rem;
+  }
+}
+
+/* Smooth transitions */
+* {
+  @apply transition-all duration-200;
+}
+
+/* RTL support */
+html[dir="rtl"] {
+  direction: rtl;
+  text-align: right;
+}
+
+html[dir="rtl"] input,
+html[dir="rtl"] textarea {
+  text-align: right;
+  direction: rtl;
 }

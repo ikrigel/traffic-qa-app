@@ -14,21 +14,21 @@ export default function CourseSelector({
   onSelectCourse,
 }: CourseSelectorProps) {
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-      <h2 className="text-lg font-semibold text-gray-800 mb-4">📚 Select Course</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 mb-4 sm:mb-6">
+      <h2 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4">📚 בחר קורס</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
         {courses.map((course) => (
           <button
             key={course.id}
             onClick={() => onSelectCourse(course.id)}
-            className={`p-4 rounded-lg text-left transition ${
+            className={`p-3 sm:p-4 rounded-lg text-left transition active:scale-95 ${
               selectedCourseId === course.id
-                ? 'bg-blue-600 text-white border-2 border-blue-700'
+                ? 'bg-blue-600 text-white border-2 border-blue-700 shadow-md'
                 : 'bg-gray-50 text-gray-800 border-2 border-gray-200 hover:border-blue-400'
             }`}
           >
-            <div className="font-bold text-base">{course.hebrewName}</div>
-            <div className="text-sm opacity-80">{course.name}</div>
+            <div className="font-bold text-sm sm:text-base">{course.hebrewName}</div>
+            <div className="text-xs sm:text-sm opacity-80">{course.name}</div>
             {course.questions.length > 0 ? (
               <div className="text-xs mt-2 opacity-70">
                 {course.questions.length} שאלות
