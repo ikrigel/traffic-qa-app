@@ -226,20 +226,23 @@ export const TRAFFIC_LAWS_QUESTIONS: Question[] = [
   }
 ];
 
+// Backward compatibility
+export const QUESTIONS = TRAFFIC_LAWS_QUESTIONS;
+
 export const getQuestionById = (id: number): Question | undefined => {
-  return QUESTIONS.find(q => q.id === id);
+  return TRAFFIC_LAWS_QUESTIONS.find(q => q.id === id);
 };
 
 export const getImportantQuestions = (): Question[] => {
-  return QUESTIONS.filter(q => q.important).sort((a, b) => b.examFrequency - a.examFrequency);
+  return TRAFFIC_LAWS_QUESTIONS.filter(q => q.important).sort((a, b) => b.examFrequency - a.examFrequency);
 };
 
 export const getQuestionsByCategory = (category: string): Question[] => {
-  return QUESTIONS.filter(q => q.category === category);
+  return TRAFFIC_LAWS_QUESTIONS.filter(q => q.category === category);
 };
 
 export const getCategories = (): string[] => {
-  return [...new Set(QUESTIONS.map(q => q.category))];
+  return [...new Set(TRAFFIC_LAWS_QUESTIONS.map(q => q.category))];
 };
 
 // Courses structure
