@@ -1,11 +1,16 @@
 'use client';
 
+import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import QuestionList from '@/components/QuestionList';
-import { TRAFFIC_LAW_QUESTIONS } from '@/lib/questions';
+import CourseSelector from '@/components/CourseSelector';
+import { COURSES, getCourseQuestions } from '@/lib/questions';
 
 export default function Home() {
   const { user, loading, login, logout } = useAuth();
+  const [selectedCourseId, setSelectedCourseId] = useState('traffic-laws');
+  const courseQuestions = getCourseQuestions(selectedCourseId);
+  const selectedCourse = COURSES.find(c => c.id === selectedCourseId);
 
   if (loading) {
     return (
@@ -85,13 +90,36 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Questions Section */}
+              {/* Courses Section */}
               <div className="mt-8">
-                <h3 className="text-2xl font-bold mb-6 text-gray-800">📚 Traffic Law Questions</h3>
-                <QuestionList
-                  questions={TRAFFIC_LAW_QUESTIONS}
-                  showAnswers={false}
+                <CourseSelector
+                  courses={COURSES}
+                  selectedCourseId={selectedCourseId}
+                  onSelectCourse={setSelectedCourseId}
                 />
+
+                {/* Course Content */}
+                {courseQuestions.length > 0 ? (
+                  <div>
+                    <h3 className="text-2xl font-bold mb-6 text-gray-800">
+                      📚 {selectedCourse?.hebrewName}
+                    </h3>
+                    <QuestionList
+                      questions={courseQuestions}
+                      showAnswers={false}
+                    />
+                  </div>
+                ) : (
+                  <div className="bg-yellow-50 rounded-lg p-8 text-center border-2 border-yellow-200">
+                    <p className="text-2xl font-bold text-yellow-700 mb-2">
+                      {selectedCourse?.hebrewName}
+                    </p>
+                    <p className="text-lg text-yellow-600">יעודכן בקרוב</p>
+                    <p className="text-sm text-yellow-600 mt-2">
+                      קורס זה יהיה זמין בקרוב עם שאלות ותשובות
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )}

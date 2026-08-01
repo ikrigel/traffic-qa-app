@@ -8,7 +8,15 @@ export interface Question {
   examFrequency: number;
 }
 
-export const QUESTIONS: Question[] = [
+export interface Course {
+  id: string;
+  name: string;
+  hebrewName: string;
+  description: string;
+  questions: Question[];
+}
+
+export const TRAFFIC_LAWS_QUESTIONS: Question[] = [
   {
     id: 1,
     hebrew: "נסיעה שלא בכביש",
@@ -234,10 +242,42 @@ export const getCategories = (): string[] => {
   return [...new Set(QUESTIONS.map(q => q.category))];
 };
 
-// Export for QuestionCard component
-export const TRAFFIC_LAW_QUESTIONS = QUESTIONS.map(q => ({
+// Courses structure
+export const COURSES: Course[] = [
+  {
+    id: 'traffic-laws',
+    name: 'Traffic Laws',
+    hebrewName: 'דיני תעבורה',
+    description: 'Israeli traffic laws and regulations',
+    questions: TRAFFIC_LAWS_QUESTIONS,
+  },
+  {
+    id: 'licensing-procedures',
+    name: 'Licensing Procedures',
+    hebrewName: 'נהלי רישוי',
+    description: 'Driver licensing procedures and requirements',
+    questions: [],
+  },
+];
+
+// Export for QuestionCard component (for backward compatibility)
+export const TRAFFIC_LAW_QUESTIONS_FORMATTED = TRAFFIC_LAWS_QUESTIONS.map(q => ({
   id: q.id,
-  question: q.english,
+  question: q.hebrew,
   answer: q.answer,
   priority: q.important,
 }));
+
+export const getCourseByCourseId = (courseId: string): Course | undefined => {
+  return COURSES.find(c => c.id === courseId);
+};
+
+export const getCourseQuestions = (courseId: string) => {
+  const course = getCourseByCourseId(courseId);
+  return course ? course.questions.map(q => ({
+    id: q.id,
+    question: q.hebrew,
+    answer: q.answer,
+    priority: q.important,
+  })) : [];
+};
