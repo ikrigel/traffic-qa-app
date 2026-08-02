@@ -28,6 +28,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Check for required env vars
+    if (!process.env.GOOGLE_CLIENT_SECRET) {
+      throw new Error('GOOGLE_CLIENT_SECRET is not set');
+    }
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET is not set');
+    }
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set');
+    }
+
     const tokens = await exchangeCodeForToken(code);
     const userInfo = getUserInfo(tokens.id_token);
     const googleLocale = (userInfo as any).locale || '';
@@ -48,6 +59,7 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (userError) throw userError;
+    if (!user) throw new Error('User not returned from upsert');
 
     // Self-heal super_admin role if needed
     if (user.email === SUPER_ADMIN_EMAIL && user.role !== 'super_admin') {
@@ -80,8 +92,12 @@ export async function GET(request: NextRequest) {
     return response;
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown auth callback error';
-    console.error('Auth callback error:', error);
-    await logError({ source: 'auth/callback', message });
+    console.error('Auth callback error:', message, error);
+    await logError({
+      source: 'auth/callback',
+      message,
+      context: { stack: error instanceof Error ? error.stack : undefined }
+    });
     return NextResponse.redirect(
       new URL('/?error=auth_failed', request.url)
     );
