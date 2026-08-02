@@ -1,6 +1,8 @@
 /* eslint-disable react/no-unescaped-entities */
 'use client';
 
+import { APP_VERSION } from '@/lib/constants';
+
 interface AboutModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -34,7 +36,10 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6 sm:p-8">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">אודות</h2>
+          <div>
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">אודות</h2>
+            <p className="text-sm text-gray-500 mt-1">v{APP_VERSION}</p>
+          </div>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
