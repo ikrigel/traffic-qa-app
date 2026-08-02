@@ -1,9 +1,11 @@
 export type Theme = 'light' | 'dark' | 'auto';
+export type Role = 'user' | 'admin' | 'super_admin';
 
 export interface User {
   id: string;
   email: string;
   name: string;
+  role: Role;
   theme: Theme;
   showAnswers: boolean;
   createdAt: string;
@@ -55,4 +57,57 @@ export interface ApiResponse<T = any> {
   data?: T;
   error?: string;
   statusCode: number;
+}
+
+export interface RagDocument {
+  id: string;
+  title: string;
+  source: string | null;
+  content: string;
+  metadata: Record<string, unknown>;
+  createdBy: string | null;
+  createdAt: string;
+}
+
+export interface DebugLog {
+  id: string;
+  level: 'info' | 'warn' | 'error';
+  source: string;
+  message: string;
+  context: Record<string, unknown> | null;
+  createdAt: string;
+}
+
+export interface RagEvaluation {
+  id: string;
+  question: string;
+  expectedAnswer: string | null;
+  aiAnswer: string;
+  retrievedDocumentIds: string[] | null;
+  metrics: Record<string, number> | null;
+  createdBy: string | null;
+  createdAt: string;
+}
+
+export interface TestAttempt {
+  id: string;
+  userId: string;
+  questionId: number;
+  questionText: string;
+  correctAnswer: string;
+  userAnswer: string;
+  inputMethod: 'typed' | 'voice';
+  verdict: string | null;
+  metrics: Record<string, number> | null;
+  feedback: string | null;
+  createdAt: string;
+}
+
+export interface RagasMetrics {
+  faithfulness?: number;
+  relevance?: number;
+  coherence?: number;
+  contextPrecision?: number;
+  contextRecall?: number;
+  [key: string]: number | undefined;
 }

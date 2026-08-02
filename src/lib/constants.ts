@@ -18,10 +18,15 @@ export const IMPORTANT_QUESTION_IDS = [3, 6, 7, 10, 11, 20];
 
 export const TOAST_DURATION = 3000;
 
+export const SUPER_ADMIN_EMAIL = 'ikrigel@gmail.com';
+export const ROLES = ['user', 'admin', 'super_admin'] as const;
+export const ADMIN_ROLES = ['admin', 'super_admin'] as const;
+
 export const ROUTES = {
   HOME: '/',
   LOGIN: '/login',
   DASHBOARD: '/dashboard',
+  ADMIN: '/admin',
   AUTH_CALLBACK: '/auth/callback',
   API_AUTH: '/api/auth',
   API_QUESTIONS: '/api/questions'
@@ -32,7 +37,8 @@ export const ERROR_MESSAGES = {
   SESSION_EXPIRED: 'Your session has expired. Please login again.',
   NETWORK_ERROR: 'Network error. Please check your connection.',
   INVALID_DEVICE: 'Unrecognized device. Please login again.',
-  SERVER_ERROR: 'Server error. Please try again later.'
+  SERVER_ERROR: 'Server error. Please try again later.',
+  FORBIDDEN: 'You do not have permission to perform this action.'
 };
 
 export const SUCCESS_MESSAGES = {

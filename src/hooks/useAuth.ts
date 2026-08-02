@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
+import type { Role } from '@/types';
 
-interface User {
+export interface AuthUser {
+  id: string;
   email: string;
-  name?: string;
+  role: Role;
 }
 
 export const useAuth = () => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -17,7 +19,7 @@ export const useAuth = () => {
     try {
       const response = await fetch('/api/user');
       if (response.ok) {
-        const data = await response.json();
+        const data: AuthUser = await response.json();
         setUser(data);
       }
     } catch (error) {
@@ -47,5 +49,8 @@ export const useAuth = () => {
     }
   };
 
-  return { user, loading, login, logout };
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+  const isSuperAdmin = user?.role === 'super_admin';
+
+  return { user, loading, login, logout, isAdmin, isSuperAdmin };
 };
