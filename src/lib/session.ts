@@ -37,23 +37,41 @@ export interface SessionUser {
 }
 
 export const getSessionUser = async (request: NextRequest): Promise<SessionUser | null> => {
-  const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
-  if (!token) return null;
+  try {
+    const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
+    if (!token) {
+      console.log('No auth token in cookie');
+      return null;
+    }
 
-  const payload = verifySessionToken(token);
-  if (!payload) return null;
+    const payload = verifySessionToken(token);
+    if (!payload) {
+      console.log('Token verification failed');
+      return null;
+    }
 
-  const supabase = getServiceSupabase();
-  const { data, error } = await supabase
-    .from('users')
-    .select('id, email, role')
-    .eq('id', payload.userId)
-    .single();
+    const supabase = getServiceSupabase();
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, email, role')
+      .eq('id', payload.userId)
+      .single();
 
-  if (error || !data) return null;
+    if (error) {
+      console.log('Supabase fetch error:', error.message);
+      return null;
+    }
+    if (!data) {
+      console.log('No user found in database');
+      return null;
+    }
 
-  const role: Role =
-    data.email === SUPER_ADMIN_EMAIL ? 'super_admin' : ((data.role as Role) ?? 'user');
+    const role: Role =
+      data.email === SUPER_ADMIN_EMAIL ? 'super_admin' : ((data.role as Role) ?? 'user');
 
-  return { id: data.id, email: data.email, role };
+    return { id: data.id, email: data.email, role };
+  } catch (error) {
+    console.error('getSessionUser error:', error);
+    return null;
+  }
 };
