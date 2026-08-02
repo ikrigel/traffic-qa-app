@@ -82,11 +82,14 @@ export async function GET(request: NextRequest) {
       new URL('/', request.url)
     );
 
-    response.cookies.set('auth_token', sessionToken, {
+    response.cookies.set({
+      name: 'auth_token',
+      value: sessionToken,
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 90,
+      path: '/',
     });
 
     return response;
