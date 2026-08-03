@@ -20,12 +20,20 @@ export const signSessionToken = (payload: SessionTokenPayload): string => {
 
 export const verifySessionToken = (token: string): SessionTokenPayload | null => {
   const secret = process.env.JWT_SECRET;
-  if (!secret) throw new Error('Missing JWT_SECRET');
+  if (!secret) {
+    console.error('JWT_SECRET is not set!');
+    throw new Error('Missing JWT_SECRET');
+  }
   try {
     const decoded = jwt.verify(token, secret) as jwt.JwtPayload & Partial<SessionTokenPayload>;
-    if (!decoded.userId || !decoded.email) return null;
+    if (!decoded.userId || !decoded.email) {
+      console.log('JWT decoded but missing userId or email');
+      return null;
+    }
+    console.log('JWT verified successfully for user:', decoded.email);
     return { userId: decoded.userId, email: decoded.email };
-  } catch {
+  } catch (error) {
+    console.error('JWT verification error:', error instanceof Error ? error.message : error);
     return null;
   }
 };
