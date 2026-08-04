@@ -27,7 +27,7 @@ export const useAdminTestAttempts = () => {
       });
       if (!response.ok) throw new Error('Failed to fetch test attempts');
       const data = await response.json();
-      setAttempts(data);
+      setAttempts(data.attempts || []);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');

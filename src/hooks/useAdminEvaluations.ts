@@ -24,7 +24,7 @@ export const useAdminEvaluations = () => {
       });
       if (!response.ok) throw new Error('Failed to fetch evaluations');
       const data = await response.json();
-      setEvaluations(data);
+      setEvaluations(data.evaluations || []);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');

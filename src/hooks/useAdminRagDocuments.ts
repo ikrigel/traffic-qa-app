@@ -24,7 +24,7 @@ export const useAdminRagDocuments = () => {
       });
       if (!response.ok) throw new Error('Failed to fetch documents');
       const data = await response.json();
-      setDocuments(data);
+      setDocuments(data.documents || []);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');

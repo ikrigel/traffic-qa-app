@@ -23,7 +23,7 @@ export const useAdminLogs = (level: 'all' | 'info' | 'warn' | 'error' = 'all') =
       });
       if (!response.ok) throw new Error('Failed to fetch logs');
       const data = await response.json();
-      setLogs(data);
+      setLogs(data.logs || []);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
