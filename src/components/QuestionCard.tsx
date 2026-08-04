@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import TestAnswerInput from './TestAnswerInput';
 
 interface QuestionCardProps {
   id: number;
@@ -8,6 +9,7 @@ interface QuestionCardProps {
   answer: string;
   isPriority?: boolean;
   showAnswers?: boolean;
+  enableTesting?: boolean;
 }
 
 export default function QuestionCard({
@@ -16,8 +18,10 @@ export default function QuestionCard({
   answer,
   isPriority = false,
   showAnswers = false,
+  enableTesting = false,
 }: QuestionCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isTestMode, setIsTestMode] = useState(false);
 
   return (
     <div
@@ -52,15 +56,35 @@ export default function QuestionCard({
         </div>
       )}
 
-      {/* Toggle Button */}
-      {!showAnswers && (
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="mt-3 sm:mt-4 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition active:scale-95"
-        >
-          {isExpanded ? '🔼 הסתר תשובה' : '🔽 הצג תשובה'}
-        </button>
+      {/* Test Mode */}
+      {isTestMode && enableTesting && (
+        <TestAnswerInput
+          questionId={id}
+          questionText={question}
+          correctAnswer={answer}
+          onClose={() => setIsTestMode(false)}
+        />
       )}
+
+      {/* Toggle Buttons */}
+      <div className="flex flex-wrap gap-2 mt-3 sm:mt-4">
+        {!showAnswers && (
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition active:scale-95"
+          >
+            {isExpanded ? '🔼 הסתר תשובה' : '🔽 הצג תשובה'}
+          </button>
+        )}
+        {enableTesting && !isTestMode && (
+          <button
+            onClick={() => setIsTestMode(true)}
+            className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition active:scale-95"
+          >
+            📝 בחן אותי
+          </button>
+        )}
+      </div>
     </div>
   );
 }

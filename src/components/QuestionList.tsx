@@ -13,11 +13,13 @@ interface Question {
 interface QuestionListProps {
   questions: Question[];
   showAnswers?: boolean;
+  enableTesting?: boolean;
 }
 
 export default function QuestionList({
   questions,
   showAnswers = false,
+  enableTesting = false,
 }: QuestionListProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [showPriorityOnly, setShowPriorityOnly] = useState(false);
@@ -71,6 +73,7 @@ export default function QuestionList({
               answer={q.answer}
               isPriority={q.priority}
               showAnswers={showAnswers}
+              enableTesting={enableTesting}
             />
           ))
         ) : (

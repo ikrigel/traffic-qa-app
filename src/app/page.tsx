@@ -6,6 +6,7 @@ import QuestionList from '@/components/QuestionList';
 import CourseSelector from '@/components/CourseSelector';
 import HelpModal from '@/components/HelpModal';
 import AboutModal from '@/components/AboutModal';
+import ChatAssistant from '@/components/ChatAssistant';
 import { COURSES, getCourseQuestions } from '@/lib/questions';
 
 export default function Home() {
@@ -135,6 +136,7 @@ export default function Home() {
                     <QuestionList
                       questions={courseQuestions}
                       showAnswers={false}
+                      enableTesting={!!user}
                     />
                   </div>
                 ) : (
@@ -158,6 +160,9 @@ export default function Home() {
           <p>Built with Next.js, React, and Supabase</p>
         </div>
       </div>
+
+      {/* Chat Assistant - only for logged-in users */}
+      {user && <ChatAssistant />}
 
       {/* Modals */}
       <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
