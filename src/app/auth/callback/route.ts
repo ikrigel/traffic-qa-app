@@ -82,16 +82,20 @@ export async function GET(request: NextRequest) {
       new URL('/', request.url)
     );
 
-    response.cookies.set({
-      name: 'auth_token',
-      value: sessionToken,
+    // Set cookie with explicit configuration
+    const isProduction = process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
+    console.log('Setting auth cookie - isProduction:', isProduction, 'NODE_ENV:', process.env.NODE_ENV, 'VERCEL_ENV:', process.env.VERCEL_ENV);
+
+    response.cookies.set('auth_token', sessionToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: isProduction,
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 90,
       path: '/',
+      domain: undefined, // Let browser determine domain
     });
 
+    console.log('Cookie set, redirecting to home');
     return response;
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown auth callback error';

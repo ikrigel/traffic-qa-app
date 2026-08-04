@@ -27,7 +27,12 @@ export const useAuth = () => {
 
   const checkAuth = async () => {
     try {
-      const response = await fetch('/api/user');
+      const response = await fetch('/api/user', {
+        credentials: 'include', // Ensure cookies are sent
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
       if (response.ok) {
         const data: AuthUser = await response.json();
         setUser(data);
