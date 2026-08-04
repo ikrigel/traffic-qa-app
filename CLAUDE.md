@@ -472,6 +472,51 @@ When a file approaches 250 lines:
 - Review RAGAS metrics quality periodically (re-train if accuracy drifts)
 - Rotate `JWT_SECRET` and `GEMINI_API_KEY` annually
 
+## Version Management
+
+**Current Version**: 1.1.0 (see `package.json` and `src/lib/constants.ts`)
+
+### Semantic Versioning Rules
+Follow [Semantic Versioning](https://semver.org/) for all releases:
+
+- **MAJOR** (X.0.0): Breaking changes, major refactors, or architectural changes
+  - Example: Complete auth system rewrite, database schema redesign
+  - Update: `package.json` → `x.0.0`, `constants.ts` → `APP_VERSION = 'x.0.0'`
+
+- **MINOR** (x.Y.0): New features, significant enhancements, or new capabilities
+  - Example: New admin panel feature, new evaluation system, new modals
+  - Update: `package.json` → `x.y.0`, `constants.ts` → `APP_VERSION = 'x.y.0'`
+
+- **PATCH** (x.y.Z): Bug fixes, security patches, or minor improvements
+  - Example: Fix auth cookie transmission, improve error logging, UI fixes
+  - Update: `package.json` → `x.y.z`, `constants.ts` → `APP_VERSION = 'x.y.z'`
+
+### Version Update Workflow
+1. Determine change type (Major/Minor/Patch)
+2. Update `package.json` version field
+3. Update `APP_VERSION` in `src/lib/constants.ts`
+4. About modal displays version automatically via `APP_VERSION`
+5. Include version bump in commit message
+6. Example commit: `chore: Bump version to 1.2.0`
+
+### Quick Reference
+```bash
+# Current version
+cat package.json | grep version
+cat src/lib/constants.ts | grep APP_VERSION
+
+# When committing
+git commit -m "fix: Fix auth cookie transmission (#123)
+
+- Improved cookie setting with explicit credentials
+- Fixed useAuth re-check on navigation
+- Added detailed error logging
+
+Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>"
+
+# Version is auto-displayed in About modal (アプリ v1.2.3)
+```
+
 ## Current Implementation Status
 
 ### ✅ Implemented
