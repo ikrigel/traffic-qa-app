@@ -48,13 +48,19 @@ export const getSessionUser = async (request: NextRequest): Promise<SessionUser 
   try {
     const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
     if (!token) {
-      console.log('No auth token in cookie');
       return null;
     }
 
-    const payload = verifySessionToken(token);
+    let payload: SessionTokenPayload | null;
+    try {
+      payload = verifySessionToken(token);
+    } catch (jwtError) {
+      console.error('JWT verification threw error:', jwtError instanceof Error ? jwtError.message : jwtError);
+      return null;
+    }
+
     if (!payload) {
-      console.log('Token verification failed');
+      console.log('Token verification failed - invalid or expired token');
       return null;
     }
 
@@ -70,7 +76,7 @@ export const getSessionUser = async (request: NextRequest): Promise<SessionUser 
       return null;
     }
     if (!data) {
-      console.log('No user found in database');
+      console.log('No user found in database with id:', payload.userId);
       return null;
     }
 
@@ -79,7 +85,7 @@ export const getSessionUser = async (request: NextRequest): Promise<SessionUser 
 
     return { id: data.id, email: data.email, role };
   } catch (error) {
-    console.error('getSessionUser error:', error);
+    console.error('getSessionUser unexpected error:', error);
     return null;
   }
 };
