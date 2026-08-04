@@ -18,18 +18,23 @@ export default function Home() {
   const courseQuestions = getCourseQuestions(selectedCourseId);
   const selectedCourse = COURSES.find(c => c.id === selectedCourseId);
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     if (courseQuestions.length === 0) {
       alert('No questions available for this course');
       return;
     }
-    const questionsForPDF = courseQuestions.map(q => ({
-      id: q.id,
-      question: q.question,
-      answer: q.answer,
-      priority: q.priority,
-    }));
-    downloadPDF(questionsForPDF, selectedCourse?.hebrewName || 'Study Materials');
+    try {
+      const questionsForPDF = courseQuestions.map(q => ({
+        id: q.id,
+        question: q.question,
+        answer: q.answer,
+        priority: q.priority,
+      }));
+      await downloadPDF(questionsForPDF, selectedCourse?.hebrewName || 'Study Materials');
+    } catch (error) {
+      console.error('PDF download failed:', error);
+      alert('Failed to generate PDF. Please try again.');
+    }
   };
 
   if (loading) {
