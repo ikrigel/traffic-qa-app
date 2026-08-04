@@ -8,6 +8,7 @@ import HelpModal from '@/components/HelpModal';
 import AboutModal from '@/components/AboutModal';
 import ChatAssistant from '@/components/ChatAssistant';
 import { COURSES, getCourseQuestions } from '@/lib/questions';
+import { downloadPDF } from '@/lib/pdfGenerator';
 
 export default function Home() {
   const { user, loading, login, logout } = useAuth();
@@ -16,6 +17,20 @@ export default function Home() {
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const courseQuestions = getCourseQuestions(selectedCourseId);
   const selectedCourse = COURSES.find(c => c.id === selectedCourseId);
+
+  const handleDownloadPDF = () => {
+    if (courseQuestions.length === 0) {
+      alert('No questions available for this course');
+      return;
+    }
+    const questionsForPDF = courseQuestions.map(q => ({
+      id: q.id,
+      question: q.question,
+      answer: q.answer,
+      priority: q.priority,
+    }));
+    downloadPDF(questionsForPDF, selectedCourse?.hebrewName || 'Study Materials');
+  };
 
   if (loading) {
     return (
@@ -35,6 +50,15 @@ export default function Home() {
             <p className="text-xs sm:text-sm text-gray-600 line-clamp-1">קורס 54 - דרכים 2000 - פותח על ידי יגאל קריגל</p>
           </div>
           <div className="flex gap-1 sm:gap-2">
+            {user && courseQuestions.length > 0 && (
+              <button
+                onClick={handleDownloadPDF}
+                className="px-2 sm:px-3 py-2 text-xs sm:text-sm bg-amber-600 text-white rounded-lg hover:bg-amber-700 font-semibold whitespace-nowrap transition"
+                title="Download PDF"
+              >
+                📥
+              </button>
+            )}
             <button
               onClick={() => setIsHelpOpen(true)}
               className="px-2 sm:px-3 py-2 text-xs sm:text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold whitespace-nowrap transition"
