@@ -4,17 +4,22 @@ import { getServiceSupabase } from '@/lib/supabase';
 import { signSessionToken } from '@/lib/session';
 import { logError } from '@/lib/logger';
 import { getLocationFromRequest } from '@/lib/geo';
-import { SUPER_ADMIN_EMAIL } from '@/lib/constants';
+import { SUPER_ADMIN_EMAIL, APP_VERSION } from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const runtime = 'nodejs';
 
+const BUILD_ID = `v${APP_VERSION}-${new Date().toISOString().split('T')[0]}`;
+
 export async function GET(request: NextRequest) {
   try {
+    console.log(`[AUTH CALLBACK BUILD ${BUILD_ID}] OAuth callback initiated`);
     const searchParams = request.nextUrl.searchParams;
     const code = searchParams.get('code');
     const error = searchParams.get('error');
+
+    console.log(`[AUTH CALLBACK BUILD ${BUILD_ID}] Code received: ${code ? 'yes' : 'no'}, Error: ${error || 'none'}`);
 
     if (error) {
       return NextResponse.redirect(
@@ -76,7 +81,10 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    console.log(`[AUTH CALLBACK BUILD ${BUILD_ID}] User created/updated: ${user.email} (id: ${user.id})`);
+
     const sessionToken = signSessionToken({ userId: user.id, email: user.email });
+    console.log(`[AUTH CALLBACK BUILD ${BUILD_ID}] Session token signed, length: ${sessionToken.length}`);
 
     const response = NextResponse.redirect(
       new URL('/', request.url)
@@ -87,7 +95,8 @@ export async function GET(request: NextRequest) {
     const isLocalhost = request.url.includes('localhost');
     const useSecure = !isLocalhost;
 
-    console.log('Setting auth cookie - isLocalhost:', isLocalhost, 'useSecure:', useSecure);
+    console.log(`[AUTH CALLBACK BUILD ${BUILD_ID}] Cookie config - isLocalhost: ${isLocalhost}, useSecure: ${useSecure}`);
+    console.log(`[AUTH CALLBACK BUILD ${BUILD_ID}] Request URL: ${request.url}`);
 
     response.cookies.set('auth_token', sessionToken, {
       httpOnly: true,
@@ -97,7 +106,8 @@ export async function GET(request: NextRequest) {
       path: '/',
     });
 
-    console.log('Cookie set with secure:', useSecure, 'redirecting to home');
+    console.log(`[AUTH CALLBACK BUILD ${BUILD_ID}] ✅ Cookie set! (secure=${useSecure}, httpOnly=true, path=/)`);
+    console.log(`[AUTH CALLBACK BUILD ${BUILD_ID}] Redirecting to /`);
     return response;
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown auth callback error';
