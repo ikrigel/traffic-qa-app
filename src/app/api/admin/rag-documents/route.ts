@@ -4,6 +4,8 @@ import { getServiceSupabase } from '@/lib/supabase';
 import { embedText } from '@/lib/gemini';
 import { logError } from '@/lib/logger';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   const auth = await requireRole(request, ['super_admin']);
   if (!auth.authorized) return auth.response;

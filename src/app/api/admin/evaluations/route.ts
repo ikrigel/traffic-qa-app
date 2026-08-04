@@ -5,6 +5,8 @@ import { retrieveRelevantDocuments } from '@/lib/rag';
 import { generateAnswer } from '@/lib/gemini';
 import { evaluateAnswer } from '@/lib/ragasClient';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   const auth = await requireRole(request, ['admin', 'super_admin']);
   if (!auth.authorized) return auth.response;

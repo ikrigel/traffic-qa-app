@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { DebugKitProvider, DebugPanel } from 'devkit-console-ui';
-import { initDebugManager, getDebugManagerInstance } from '@/lib/devkitConsole';
+import { initDebugManager } from '@/lib/devkitConsole';
 
 export default function DevkitConsolePanel() {
   const [manager, setManager] = useState<any>(null);

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireRole } from '@/lib/requireRole';
 import { getServiceSupabase } from '@/lib/supabase';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   const auth = await requireRole(request, ['admin', 'super_admin']);
   if (!auth.authorized) return auth.response;
