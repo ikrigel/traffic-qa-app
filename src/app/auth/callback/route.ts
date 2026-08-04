@@ -76,9 +76,6 @@ export async function GET(request: NextRequest) {
         email: userInfo.email,
         name: userInfo.name,
         last_login: new Date(),
-        location: location.location,
-        country: location.country,
-        city: location.city,
       }, { onConflict: 'email' })
       .select()
       .single();
@@ -92,6 +89,22 @@ export async function GET(request: NextRequest) {
       throw new Error('User not returned from upsert');
     }
     console.log(`[AUTH CALLBACK BUILD ${BUILD_ID}] ✓ User upserted: ${user.email} (id: ${user.id}, role: ${user.role})`);
+
+    console.log(`[AUTH CALLBACK BUILD ${BUILD_ID}] Updating location fields...`);
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({
+        location: location.location,
+        country: location.country,
+        city: location.city,
+      })
+      .eq('id', user.id);
+
+    if (updateError) {
+      console.error(`[AUTH CALLBACK BUILD ${BUILD_ID}] ❌ Location update error:`, updateError);
+    } else {
+      console.log(`[AUTH CALLBACK BUILD ${BUILD_ID}] ✓ Location updated: ${location.country}/${location.city}`);
+    }
 
     // Self-heal super_admin role if needed
     if (user.email === SUPER_ADMIN_EMAIL && user.role !== 'super_admin') {
