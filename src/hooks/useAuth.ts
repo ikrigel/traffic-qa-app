@@ -13,6 +13,16 @@ export const useAuth = () => {
 
   useEffect(() => {
     checkAuth();
+
+    // Re-check auth when user returns to page (e.g., after OAuth redirect)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        checkAuth();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
   const checkAuth = async () => {
@@ -21,9 +31,15 @@ export const useAuth = () => {
       if (response.ok) {
         const data: AuthUser = await response.json();
         setUser(data);
+        console.log('✅ User authenticated:', data.email);
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.log('Not authenticated:', errorData.reason || 'unknown reason');
+        setUser(null);
       }
     } catch (error) {
       console.error('Auth check failed:', error);
+      setUser(null);
     } finally {
       setLoading(false);
     }
