@@ -1,15 +1,47 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { DebugKitProvider, DebugPanel } from 'devkit-console-ui';
+import { initDebugManager, getDebugManagerInstance } from '@/lib/devkitConsole';
+
 export default function DevkitConsolePanel() {
+  const [manager, setManager] = useState<any>(null);
+
+  useEffect(() => {
+    const debugManager = initDebugManager();
+    setManager(debugManager);
+  }, []);
+
+  if (!manager) {
+    return (
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-gray-800">Live Debugging Console</h3>
+        <p className="text-gray-600">Initializing debug console...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-gray-800">Live Debugging Console</h3>
       <p className="text-gray-600">
-        DevKit Console provides real-time client-side debugging, log history, and performance monitoring.
+        Real-time client-side debugging with log history, level filtering, and export functionality.
       </p>
-      <div className="bg-gray-100 rounded-lg p-8 text-center border-2 border-dashed border-gray-300">
-        <p className="text-gray-600">Live console would render here (requires devkit-console-ui setup)</p>
-      </div>
+      <DebugKitProvider manager={manager}>
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <DebugPanel
+            position="bottom-right"
+            defaultOpen={true}
+            showLogViewer={true}
+            showExport={true}
+            showNamespaces={true}
+            showVersion={true}
+            maxVisibleLogs={100}
+            theme="light"
+            className="w-full"
+          />
+        </div>
+      </DebugKitProvider>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 {
   "name": "traffic-qa-app",
-  "version": "1.2.1",
+  "version": "1.2.3",
   "description": "Interactive Q&A app for learning Israeli traffic laws",
   "private": true,
   "scripts": {
@@ -20,6 +20,8 @@
     "@supabase/supabase-js": "^2.38.0",
     "axios": "^1.6.2",
     "clsx": "^2.0.0",
+    "devkit-console-core": "^0.2.1",
+    "devkit-console-ui": "^0.2.1",
     "google-auth-library": "^9.4.1",
     "html2canvas": "^1.4.1",
     "js-cookie": "^3.0.5",
