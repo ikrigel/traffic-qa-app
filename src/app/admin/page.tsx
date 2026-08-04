@@ -14,7 +14,7 @@ export default function AdminPage() {
     );
   }
 
-  if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) {
+  if (!user || !user.role || (user.role !== 'admin' && user.role !== 'super_admin')) {
     return (
       <main className="min-h-screen bg-gradient-to-br from-red-50 to-orange-100 flex items-center justify-center px-4">
         <div className="bg-white rounded-lg shadow-lg p-8 text-center max-w-md">
@@ -47,7 +47,7 @@ export default function AdminPage() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <AdminPanelContainer user={user} />
+        {user && user.role && <AdminPanelContainer user={user as any} />}
       </div>
     </main>
   );

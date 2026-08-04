@@ -63,7 +63,7 @@ export default function UserManagementPanel() {
                       </span>
                     ) : (
                       <select
-                        value={user.role}
+                        value={user.role || 'user'}
                         onChange={e => handleRoleChange(user.id, e.target.value)}
                         disabled={changing === user.id}
                         className="px-2 py-1 border border-gray-300 rounded bg-white cursor-pointer"
