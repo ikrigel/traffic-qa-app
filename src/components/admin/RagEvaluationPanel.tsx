@@ -141,10 +141,10 @@ export default function RagEvaluationPanel() {
           </div>
         ) : (
           <div className="space-y-2 max-h-64 overflow-y-auto">
-            {evaluations.slice().reverse().map(eval => (
-              <div key={eval.id} className="border border-gray-200 rounded p-3 text-sm">
-                <p className="font-semibold text-gray-800 mb-1">{eval.question}</p>
-                <p className="text-gray-600 text-xs mb-2">Created: {new Date(eval.created_at).toLocaleString()}</p>
+            {evaluations.slice().reverse().map(evaluation => (
+              <div key={evaluation.id} className="border border-gray-200 rounded p-3 text-sm">
+                <p className="font-semibold text-gray-800 mb-1">{evaluation.question}</p>
+                <p className="text-gray-600 text-xs mb-2">Created: {new Date(evaluation.created_at).toLocaleString()}</p>
               </div>
             ))}
           </div>

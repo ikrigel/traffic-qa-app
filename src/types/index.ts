@@ -6,10 +6,15 @@ export interface User {
   email: string;
   name: string;
   role: Role;
-  theme: Theme;
-  showAnswers: boolean;
-  createdAt: string;
-  lastLogin: string;
+  theme?: Theme;
+  showAnswers?: boolean;
+  location?: string | null;
+  country?: string | null;
+  city?: string | null;
+  created_at?: string;
+  last_login?: string | null;
+  createdAt?: string;
+  lastLogin?: string;
 }
 
 export interface Session {
