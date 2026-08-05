@@ -49,11 +49,23 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
         setIsListening(false);
       };
       recognitionRef.current.onresult = (event: any) => {
-        const transcript = Array.from(event.results)
-          .map((result: any) => result[0].transcript)
-          .join('');
-        setAnswer(transcript);
-        setInputMethod('voice');
+        let interimTranscript = '';
+        let finalTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript + ' ';
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+
+        const fullTranscript = finalTranscript || interimTranscript;
+        if (fullTranscript.trim()) {
+          setAnswer(prev => (prev ? prev + ' ' + fullTranscript.trim() : fullTranscript.trim()));
+          setInputMethod('voice');
+        }
       };
       recognitionRef.current.start();
     } catch (error) {
@@ -90,11 +102,21 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
         }),
       });
 
-      if (!response.ok) throw new Error('Failed to evaluate answer');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMsg = errorData.error || `Server error: ${response.status}`;
+        throw new Error(errorMsg);
+      }
+
       const data = await response.json();
+      if (!data.verdict) {
+        throw new Error('Invalid response from server');
+      }
       setResult(data);
     } catch (error) {
-      alert('Error: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Evaluation error:', errorMsg);
+      alert('Error: ' + errorMsg);
     } finally {
       setLoading(false);
     }

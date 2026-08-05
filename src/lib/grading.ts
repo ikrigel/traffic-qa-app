@@ -20,8 +20,19 @@ export const gradeUserAnswer = async (input: GradingInput): Promise<GradingResul
   try {
     const { question, correctAnswer, userAnswer } = input;
 
-    const documents = await retrieveRelevantDocuments(question, 3);
-    const context = documents.map(doc => `Title: ${doc.title}\n${doc.content}`).join('\n\n');
+    let context = '';
+    try {
+      const documents = await retrieveRelevantDocuments(question, 3);
+      if (documents.length > 0) {
+        context = documents.map(doc => `Title: ${doc.title}\n${doc.content}`).join('\n\n');
+      }
+    } catch (ragError) {
+      console.error('RAG retrieval failed, using empty context:', ragError);
+      await logError({
+        source: 'grading.retrieveRelevantDocuments',
+        message: ragError instanceof Error ? ragError.message : 'RAG retrieval failed',
+      });
+    }
 
     const metrics = await evaluateAnswer(question, userAnswer, context, correctAnswer);
 
@@ -35,19 +46,37 @@ export const gradeUserAnswer = async (input: GradingInput): Promise<GradingResul
       verdict = 'partial';
     }
 
-    const feedbackPrompt = `
-      בהינתן השאלה: "${question}"
-      התשובה הנכונה: "${correctAnswer}"
-      התשובה של המשתמש: "${userAnswer}"
+    let feedback = 'לא ניתן ליצור משוב כרגע';
+    try {
+      const feedbackPrompt = `
+בהינתן השאלה: "${question}"
+התשובה הנכונה: "${correctAnswer}"
+התשובה של המשתמש: "${userAnswer}"
 
-      תן משוב קצר וחכם (שורה אחת בעברית) על התשובה של המשתמש.
-    `;
+תן משוב קצר וחכם (שורה אחת בעברית) על התשובה של המשתמש.
+      `;
 
-    const feedback = await generateAnswer('', feedbackPrompt);
+      const generatedFeedback = await generateAnswer('', feedbackPrompt);
+      if (generatedFeedback) {
+        feedback = generatedFeedback;
+      }
+    } catch (feedbackError) {
+      console.error('Feedback generation failed:', feedbackError);
+      await logError({
+        source: 'grading.generateAnswer',
+        message: feedbackError instanceof Error ? feedbackError.message : 'Feedback generation failed',
+      });
+      // Use fallback feedback based on verdict
+      if (verdict === 'correct') {
+        feedback = 'תשובה נכונה! כל הכבוד.';
+      } else if (verdict === 'partial') {
+        feedback = 'תשובה חלקית. קרוב, אך יש עוד מקום לשיפור.';
+      }
+    }
 
     return {
       verdict,
-      feedback: feedback || 'משהו לא עבד בהערכה',
+      feedback,
       metrics,
     };
   } catch (error) {
