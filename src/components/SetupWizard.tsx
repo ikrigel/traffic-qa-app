@@ -182,8 +182,8 @@ export default function SetupWizard() {
                   className="text-indigo-600 hover:underline font-semibold"
                 >
                   Google AI Studio
-                </a>{' '}
-                and click "Create API key" (takes 30 seconds)
+                </a>
+                {' '}and click &quot;Create API key&quot; (takes 30 seconds)
               </p>
             </div>
 
