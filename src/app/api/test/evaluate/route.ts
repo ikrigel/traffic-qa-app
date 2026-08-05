@@ -23,14 +23,22 @@ export async function POST(request: NextRequest) {
 
     let grading;
     try {
-      grading = await gradeUserAnswer({
+      const gradingPromise = gradeUserAnswer({
         question: questionText,
         correctAnswer,
         userAnswer,
       });
-    } catch {
+
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Grading timeout after 25 seconds')), 25000)
+      );
+
+      grading = await Promise.race([gradingPromise, timeoutPromise]);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Failed to grade answer';
+      console.error('Grading error:', msg, error);
       return NextResponse.json(
-        { error: 'Failed to grade answer' },
+        { error: msg || 'Failed to grade answer' },
         { status: 500 }
       );
     }
@@ -64,9 +72,10 @@ export async function POST(request: NextRequest) {
       metrics: grading.metrics,
     });
   } catch (error) {
-    console.error('Test evaluation error:', error);
+    const msg = error instanceof Error ? error.message : 'Failed to evaluate test';
+    console.error('Test evaluation error:', msg, error);
     return NextResponse.json(
-      { error: 'Failed to evaluate test' },
+      { error: msg },
       { status: 500 }
     );
   }

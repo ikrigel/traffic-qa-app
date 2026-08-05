@@ -27,7 +27,7 @@ export default function AdminPanelContainer({ user }: Props) {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="admin-panel">
       {/* Tab Navigation */}
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
         <div className="flex flex-wrap gap-0 border-b">
@@ -42,6 +42,7 @@ export default function AdminPanelContainer({ user }: Props) {
                     ? 'bg-indigo-600 text-white border-b-2 border-indigo-700'
                     : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
                 }`}
+                data-testid={`tab-${tab.id}`}
               >
                 <span className="text-lg">{tab.icon}</span> {tab.label}
               </button>

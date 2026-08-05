@@ -44,7 +44,7 @@ export default function RagEvaluationPanel() {
   const verdictEmoji = { correct: '✅', partial: '⚠️', incorrect: '❌' };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="evaluations-panel">
       <div className="grid grid-cols-2 gap-4 text-sm">
         <div className="bg-indigo-50 p-3 rounded border border-indigo-200">
           <p className="text-gray-600">Manual Evaluations</p>
@@ -152,7 +152,7 @@ export default function RagEvaluationPanel() {
       </div>
 
       {/* User Test Attempts */}
-      <div className="space-y-4">
+      <div className="space-y-4" data-testid="test-attempts-feed">
         <h4 className="font-semibold text-gray-800">Recent User Test Attempts ({attempts.length})</h4>
         {attemptsLoading ? (
           <p className="text-gray-600">Loading...</p>
@@ -163,7 +163,7 @@ export default function RagEvaluationPanel() {
         ) : (
           <div className="space-y-2 max-h-96 overflow-y-auto">
             {attempts.slice().reverse().map(attempt => (
-              <div key={attempt.id} className={`rounded p-3 ${getVerdictColor(attempt.verdict)}`}>
+              <div key={attempt.id} className={`rounded p-3 ${getVerdictColor(attempt.verdict)}`} data-testid={`verdict-${attempt.verdict}`}>
                 <div className="flex gap-2 items-start mb-2">
                   <span className="text-lg">{verdictEmoji[attempt.verdict as keyof typeof verdictEmoji]}</span>
                   <div className="flex-1 min-w-0">

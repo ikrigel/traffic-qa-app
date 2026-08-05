@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 interface TestResult {
   verdict: 'correct' | 'partial' | 'incorrect';
@@ -22,26 +22,44 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
   const [inputMethod, setInputMethod] = useState<'typed' | 'voice'>('typed');
+  const [voiceSupported, setVoiceSupported] = useState(false);
+
+  useEffect(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    setVoiceSupported(!!SpeechRecognition);
+  }, []);
 
   const startListening = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert('Speech recognition not supported in your browser');
+      alert('Speech recognition is not supported on your device or browser');
       return;
     }
 
-    recognitionRef.current = new SpeechRecognition();
-    recognitionRef.current.lang = 'he-IL';
-    recognitionRef.current.onstart = () => setIsListening(true);
-    recognitionRef.current.onend = () => setIsListening(false);
-    recognitionRef.current.onresult = (event: any) => {
-      const transcript = Array.from(event.results)
-        .map((result: any) => result[0].transcript)
-        .join('');
-      setAnswer(transcript);
-      setInputMethod('voice');
-    };
-    recognitionRef.current.start();
+    try {
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.lang = 'he-IL';
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = true;
+
+      recognitionRef.current.onstart = () => setIsListening(true);
+      recognitionRef.current.onend = () => setIsListening(false);
+      recognitionRef.current.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+        setIsListening(false);
+      };
+      recognitionRef.current.onresult = (event: any) => {
+        const transcript = Array.from(event.results)
+          .map((result: any) => result[0].transcript)
+          .join('');
+        setAnswer(transcript);
+        setInputMethod('voice');
+      };
+      recognitionRef.current.start();
+    } catch (error) {
+      console.error('Failed to start speech recognition:', error);
+      alert('Failed to start voice input. Please try again.');
+    }
   };
 
   const stopListening = () => {
@@ -95,7 +113,7 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
   };
 
   return (
-    <div className="space-y-4 p-4 bg-indigo-50 rounded-lg border-2 border-indigo-200">
+    <div className="space-y-4 p-4 bg-indigo-50 rounded-lg border-2 border-indigo-200" data-testid="test-input-container">
       <h4 className="font-semibold text-indigo-900">בחן אותי (Test Me)</h4>
 
       {!result ? (
@@ -106,6 +124,7 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
             placeholder="Type your answer here..."
             rows={4}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            data-testid="answer-textarea"
           />
 
           <div className="flex gap-2">
@@ -117,7 +136,7 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
               {loading ? '⏳ Grading...' : '📝 Submit Answer'}
             </button>
 
-            {typeof window !== 'undefined' && (window as any).SpeechRecognition && (
+            {voiceSupported && (
               <button
                 onClick={isListening ? stopListening : startListening}
                 className={`px-4 py-2 rounded-lg font-semibold transition ${
@@ -139,10 +158,10 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
           </div>
         </div>
       ) : (
-        <div className={`rounded-lg p-4 border-2 ${verdictColor[result.verdict]}`}>
+        <div className={`rounded-lg p-4 border-2 ${verdictColor[result.verdict]}`} data-testid="verdict-result">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-2xl">{verdictEmoji[result.verdict]}</span>
-            <span className="font-bold text-lg capitalize">{result.verdict}</span>
+            <span className="font-bold text-lg capitalize" data-testid="verdict-text">{result.verdict}</span>
           </div>
           <p className="mb-3">{result.feedback}</p>
 
