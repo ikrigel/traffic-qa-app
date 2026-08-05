@@ -68,7 +68,6 @@ test.describe('Voice Input Feature', () => {
 
     // On older iOS Safari, voice button may not be visible
     if (!isVisible) {
-      const errorMsg = page.locator('text=/not supported|not available/i');
       // User can still type as fallback
       const textarea = page.locator('[data-testid="answer-textarea"]');
       await expect(textarea).toBeVisible();
@@ -91,7 +90,7 @@ test.describe('Voice Input Feature', () => {
       // Click voice button to start listening
       await voiceButton.click();
 
-      // Simulate failure by clicking again immediately (simulates error state)
+      // Wait a bit for speech recognition to initialize
       await page.waitForTimeout(500);
 
       // Voice button should still be functional

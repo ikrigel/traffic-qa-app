@@ -2,8 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/session';
 import { getServiceSupabase } from '@/lib/supabase';
 import { gradeUserAnswer } from '@/lib/grading';
+import type { RagasMetrics } from '@/types';
 
 export const dynamic = 'force-dynamic';
+
+interface GradingResult {
+  verdict: 'correct' | 'partial' | 'incorrect';
+  feedback: string;
+  metrics: RagasMetrics;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,7 +28,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let grading;
+    let grading: GradingResult;
     try {
       const gradingPromise = gradeUserAnswer({
         question: questionText,
@@ -29,7 +36,7 @@ export async function POST(request: NextRequest) {
         userAnswer,
       });
 
-      const timeoutPromise = new Promise((_, reject) =>
+      const timeoutPromise = new Promise<GradingResult>((_, reject) =>
         setTimeout(() => reject(new Error('Grading timeout after 25 seconds')), 25000)
       );
 

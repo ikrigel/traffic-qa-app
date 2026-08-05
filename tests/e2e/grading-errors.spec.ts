@@ -74,11 +74,11 @@ test.describe('Answer Grading Error Handling', () => {
     // Should show error alert or message
     await page.waitForTimeout(1000);
 
-    const errorMsg = page.locator('text=/error|failed/i');
+    const errorElements = page.locator('text=/error|failed/i');
     const alertDialog = page.locator('[role="alert"]');
 
     const hasError =
-      await errorMsg.isVisible().catch(() => false) ||
+      await errorElements.isVisible().catch(() => false) ||
       await alertDialog.isVisible().catch(() => false);
 
     expect(hasError).toBe(true);
