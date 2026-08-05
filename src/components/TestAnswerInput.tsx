@@ -116,7 +116,27 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
       console.error('Evaluation error:', errorMsg);
-      alert('Error: ' + errorMsg);
+
+      // Check if it's a setup/configuration error
+      if (
+        errorMsg.includes('GEMINI_API_KEY') ||
+        errorMsg.includes('Gemini') ||
+        errorMsg.toLowerCase().includes('configuration')
+      ) {
+        window.location.href = '/setup?error=gemini';
+        return;
+      }
+
+      if (
+        errorMsg.includes('SUPABASE') ||
+        errorMsg.includes('database') ||
+        errorMsg.toLowerCase().includes('configuration')
+      ) {
+        window.location.href = '/setup?error=supabase';
+        return;
+      }
+
+      alert('❌ Error: ' + errorMsg + '\n\nTip: If this persists, check the Setup page (/setup)');
     } finally {
       setLoading(false);
     }

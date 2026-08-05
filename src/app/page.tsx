@@ -7,6 +7,7 @@ import CourseSelector from '@/components/CourseSelector';
 import HelpModal from '@/components/HelpModal';
 import AboutModal from '@/components/AboutModal';
 import ChatAssistant from '@/components/ChatAssistant';
+import ServerErrorBanner from '@/components/ServerErrorBanner';
 import { COURSES, getCourseQuestions } from '@/lib/questions';
 import { downloadPDF } from '@/lib/pdfGenerator';
 
@@ -47,6 +48,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <ServerErrorBanner />
       {/* Header */}
       <header className="bg-white shadow-sm sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex justify-between items-center gap-2">
