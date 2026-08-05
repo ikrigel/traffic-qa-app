@@ -116,3 +116,41 @@ export interface RagasMetrics {
   contextRecall?: number;
   [key: string]: number | undefined;
 }
+
+export type AIProvider = 'gemini' | 'openai' | 'groq' | 'ollama' | 'huggingface';
+
+export interface APIKey {
+  id: string;
+  userId: string;
+  provider: AIProvider;
+  displayName?: string;
+  isActive: boolean;
+  isDefault: boolean;
+  createdAt: string;
+  lastUsedAt?: string;
+  rotatedAt?: string;
+}
+
+export interface ProviderConfig {
+  id: string;
+  provider: AIProvider;
+  isEnabled: boolean;
+  defaultModel?: string;
+  rateLimitPerMinute?: number;
+  costPerRequest?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface APIKeyUsage {
+  id: string;
+  apiKeyId: string;
+  userId: string;
+  provider: AIProvider;
+  operation: 'embedding' | 'generation' | 'grading';
+  tokensUsed?: number;
+  costIncurred?: number;
+  success: boolean;
+  errorMessage?: string;
+  createdAt: string;
+}
