@@ -13,23 +13,48 @@ interface GradingResult {
 }
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+
   try {
+    console.log('[EVALUATE] Starting evaluation request');
+
     const user = await getSessionUser(request);
     if (!user) {
+      console.error('[EVALUATE] Not authenticated');
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
+    console.log('[EVALUATE] User authenticated:', user.id);
 
     const { questionId, questionText, correctAnswer, userAnswer, inputMethod } = await request.json();
 
     if (!questionId || !questionText || !correctAnswer || !userAnswer) {
+      console.error('[EVALUATE] Missing required fields');
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       );
     }
 
+    console.log('[EVALUATE] Validating environment variables...');
+    if (!process.env.GEMINI_API_KEY) {
+      console.error('[EVALUATE] GEMINI_API_KEY not set');
+      return NextResponse.json(
+        { error: 'Server configuration error: Missing GEMINI_API_KEY' },
+        { status: 500 }
+      );
+    }
+
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('[EVALUATE] SUPABASE_SERVICE_ROLE_KEY not set');
+      return NextResponse.json(
+        { error: 'Server configuration error: Missing SUPABASE_SERVICE_ROLE_KEY' },
+        { status: 500 }
+      );
+    }
+
     let grading: GradingResult;
     try {
+      console.log('[EVALUATE] Starting grading process...');
       const gradingPromise = gradeUserAnswer({
         question: questionText,
         correctAnswer,
@@ -41,17 +66,19 @@ export async function POST(request: NextRequest) {
       );
 
       grading = await Promise.race([gradingPromise, timeoutPromise]);
+      console.log('[EVALUATE] Grading completed, verdict:', grading.verdict);
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Failed to grade answer';
-      console.error('Grading error:', msg, error);
+      console.error('[EVALUATE] Grading error:', msg, error);
       return NextResponse.json(
         { error: msg || 'Failed to grade answer' },
         { status: 500 }
       );
     }
 
+    console.log('[EVALUATE] Saving test attempt to database...');
     const supabase = getServiceSupabase();
-    const { error: insertError } = await supabase
+    const { error: insertError, data } = await supabase
       .from('test_attempts')
       .insert({
         user_id: user.id,
@@ -63,15 +90,19 @@ export async function POST(request: NextRequest) {
         verdict: grading.verdict,
         metrics: grading.metrics,
         feedback: grading.feedback,
-      });
+      })
+      .select();
 
     if (insertError) {
-      console.error('Test attempt insert error:', insertError);
+      console.error('[EVALUATE] Test attempt insert error:', insertError);
       return NextResponse.json(
-        { error: 'Failed to save test attempt' },
+        { error: 'Failed to save test attempt: ' + insertError.message },
         { status: 500 }
       );
     }
+
+    const duration = Date.now() - startTime;
+    console.log(`[EVALUATE] Success! Completed in ${duration}ms. ID:`, data?.[0]?.id);
 
     return NextResponse.json({
       verdict: grading.verdict,
@@ -79,8 +110,9 @@ export async function POST(request: NextRequest) {
       metrics: grading.metrics,
     });
   } catch (error) {
+    const duration = Date.now() - startTime;
     const msg = error instanceof Error ? error.message : 'Failed to evaluate test';
-    console.error('Test evaluation error:', msg, error);
+    console.error(`[EVALUATE] Error after ${duration}ms:`, msg, error);
     return NextResponse.json(
       { error: msg },
       { status: 500 }

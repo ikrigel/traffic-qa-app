@@ -20,21 +20,27 @@ export const gradeUserAnswer = async (input: GradingInput): Promise<GradingResul
   try {
     const { question, correctAnswer, userAnswer } = input;
 
+    console.log('[GRADING] Starting with question:', question.substring(0, 50));
+
     let context = '';
     try {
+      console.log('[GRADING] Retrieving relevant documents...');
       const documents = await retrieveRelevantDocuments(question, 3);
+      console.log('[GRADING] Retrieved', documents.length, 'documents');
       if (documents.length > 0) {
         context = documents.map(doc => `Title: ${doc.title}\n${doc.content}`).join('\n\n');
       }
     } catch (ragError) {
-      console.error('RAG retrieval failed, using empty context:', ragError);
+      console.error('[GRADING] RAG retrieval failed, using empty context:', ragError);
       await logError({
         source: 'grading.retrieveRelevantDocuments',
         message: ragError instanceof Error ? ragError.message : 'RAG retrieval failed',
       });
     }
 
+    console.log('[GRADING] Evaluating answer...');
     const metrics = await evaluateAnswer(question, userAnswer, context, correctAnswer);
+    console.log('[GRADING] Metrics computed:', metrics);
 
     const faithfulness = metrics.faithfulness ?? 0;
     const relevance = metrics.relevance ?? 0;
