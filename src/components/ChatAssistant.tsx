@@ -40,9 +40,16 @@ export default function ChatAssistant() {
       };
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
+      const errorText = error instanceof Error ? error.message : 'Unknown error';
+      let content = 'Sorry, I encountered an error. Please try again.';
+
+      if (errorText.includes('API key') || errorText.includes('No API key')) {
+        content = '🔑 You need to add an API key to use the chat assistant! Click the ⚙️ Settings button at the top and add your API key.';
+      }
+
       const errorMessage: Message = {
         role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again.',
+        content,
       };
       setMessages(prev => [...prev, errorMessage]);
     } finally {

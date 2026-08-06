@@ -117,26 +117,19 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
       console.error('Evaluation error:', errorMsg);
 
-      // Check if it's a setup/configuration error
+      // Check if it's an API key error
       if (
-        errorMsg.includes('GEMINI_API_KEY') ||
-        errorMsg.includes('Gemini') ||
-        errorMsg.toLowerCase().includes('configuration')
+        errorMsg.includes('API key') ||
+        errorMsg.includes('no api key') ||
+        errorMsg.includes('No API key') ||
+        errorMsg.toLowerCase().includes('missing key')
       ) {
-        window.location.href = '/setup?error=gemini';
+        alert('🔑 You need to add an API key to use answer grading!\n\nClick the ⚙️ Settings button at the top, then go to "🔑 API Keys" and add a key from:\n- Groq (free & fast)\n- Google Gemini (free)\n- OpenAI (paid)\n- Ollama (local)\n- HuggingFace (free)');
         return;
       }
 
-      if (
-        errorMsg.includes('SUPABASE') ||
-        errorMsg.includes('database') ||
-        errorMsg.toLowerCase().includes('configuration')
-      ) {
-        window.location.href = '/setup?error=supabase';
-        return;
-      }
-
-      alert('❌ Error: ' + errorMsg + '\n\nTip: If this persists, check the Setup page (/setup)');
+      // Generic error message
+      alert('❌ Error: ' + errorMsg + '\n\nIf this persists, please add an API key in Settings (⚙️) → 🔑 API Keys');
     } finally {
       setLoading(false);
     }
