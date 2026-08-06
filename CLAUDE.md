@@ -632,3 +632,73 @@ Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>"
 3. Only super_admin can change roles or access RAG documents
 4. Debug logs require 'admin' role or higher
 5. Test attempts feed shows all user attempts for review
+
+### API Keys Management Issues (v1.3.0+)
+**Error**: "fail to add api key" in Settings modal
+
+**Root Causes**:
+1. **Database migration not applied** (most common): The `api_keys` table doesn't exist on Vercel
+2. **ENCRYPTION_KEY not set**: Falls back to JWT_SECRET (should work), but check if both are missing
+3. **User authentication failed**: Verify session is active (`/api/user` returns user info)
+4. **Provider validation**: Check provider value is one of: `gemini`, `openai`, `groq`, `ollama`, `huggingface`
+
+**Fix Instructions**:
+
+1. **Apply Database Migration to Vercel**:
+   ```bash
+   # Option A: Using Supabase Dashboard
+   - Go to Supabase dashboard for your project
+   - Navigate to SQL Editor
+   - Create new query and copy contents of:
+     supabase/migrations/20260805000000_add_api_keys_management.sql
+   - Run the migration
+   - Verify tables created: api_keys, ai_provider_config, api_key_usage
+
+   # Option B: Using Supabase CLI
+   npx supabase link --project-ref <your-project-ref>
+   npx supabase db push --dry-run  # Preview changes
+   npx supabase db push            # Apply migrations
+   ```
+
+2. **Verify Environment Variables**:
+   - Check Vercel dashboard → Settings → Environment Variables
+   - Ensure `ENCRYPTION_KEY` or `JWT_SECRET` is set (at least one must exist)
+   - For production, set `ENCRYPTION_KEY` to a different value than `JWT_SECRET` for better security
+   - Example: `ENCRYPTION_KEY=your-32-character-random-string-here`
+
+3. **Check Database Schema**:
+   ```sql
+   -- Run in Supabase SQL Editor to verify
+   SELECT table_name FROM information_schema.tables 
+   WHERE table_schema = 'public' AND table_name LIKE 'api%';
+   
+   -- Should return: api_keys, ai_provider_config, api_key_usage
+   ```
+
+4. **Test API Endpoint Manually**:
+   ```bash
+   # Get API keys (should return 200 and {"keys": []})
+   curl -X GET https://traffic-qa-app.vercel.app/api/user/keys \
+     -H "Cookie: your-auth-cookie-here"
+   
+   # Should show empty array if no keys exist yet
+   ```
+
+5. **Check Browser Console for Detailed Errors**:
+   - Open Developer Tools → Console
+   - Look for error messages with "Failed to add API key" and full error text
+   - Common errors:
+     - `relation "public.api_keys" does not exist` → Migration not applied
+     - `Failed to encrypt API key` → ENCRYPTION_KEY issues
+     - `Not authenticated` → Session expired, refresh and login again
+
+6. **Verify in Admin Panel** (if you're super_admin):
+   - Go to Admin Panel → Debug Logs
+   - Filter by level "error"
+   - Look for entries from `apiKeysService.addApiKey`
+   - Logs show the exact database error
+
+**Prevention**:
+- Always apply new database migrations after pulling new code
+- Document new environment variables in `.env.example` and Vercel settings
+- Test API key features on staging before production deployment

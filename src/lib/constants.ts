@@ -1,6 +1,6 @@
 export const APP_NAME = 'Traffic Laws Q&A';
 export const APP_DESCRIPTION = 'Learn Israeli traffic laws with interactive Q&A';
-export const APP_VERSION = '1.3.0';
+export const APP_VERSION = '1.3.1';
 export const AUTHOR = 'Traffic Laws Community';
 
 export const GOOGLE_OAUTH_SCOPES = [

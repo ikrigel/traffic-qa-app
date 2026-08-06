@@ -111,7 +111,7 @@ export default function UserSettings() {
 
   const handleSetDefault = async (keyId: string) => {
     try {
-      const response = await fetch(`/api/user/keys/${keyId}/default`, {
+      const response = await fetch(`/api/user/keys/${keyId}`, {
         method: 'PATCH',
         credentials: 'include',
       });
