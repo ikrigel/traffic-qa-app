@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { providers, ProviderCallError } from '@/lib/providers';
 import { listCandidateKeys } from '@/lib/apiKeys';
 import { trackApiKeyUsage } from '@/lib/apiKeys';

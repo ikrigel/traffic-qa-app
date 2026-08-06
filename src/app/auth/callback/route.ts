@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { NextRequest, NextResponse } from 'next/server';
 import { exchangeCodeForToken, getUserInfo } from '@/lib/auth';
 import { getServiceSupabase } from '@/lib/supabase';

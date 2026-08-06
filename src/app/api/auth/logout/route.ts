@@ -9,8 +9,8 @@ export async function POST(request: NextRequest) {
   return response;
 }
 
-export async function GET(request: NextRequest) {
-  const response = NextResponse.redirect(new URL('/', request.url));
+export async function GET(_request: NextRequest) {
+  const response = NextResponse.redirect(new URL('/', 'https://traffic-qa-app.vercel.app/'));
   response.cookies.delete(AUTH_COOKIE_NAME);
   return response;
 }

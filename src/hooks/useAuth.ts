@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { useState, useEffect } from 'react';
 import type { Role } from '@/types';
 import { APP_VERSION } from '@/lib/constants';

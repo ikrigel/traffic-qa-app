@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { embedText } from './gemini';
 import { getServiceSupabase } from './supabase';
 import { logError } from './logger';

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 export interface DebugLog {
   id: string;
@@ -14,7 +14,7 @@ export const useAdminLogs = (level: 'all' | 'info' | 'warn' | 'error' = 'all') =
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     try {
       setLoading(true);
       const query = level === 'all' ? '' : `?level=${level}`;
@@ -30,11 +30,11 @@ export const useAdminLogs = (level: 'all' | 'info' | 'warn' | 'error' = 'all') =
     } finally {
       setLoading(false);
     }
-  };
+  }, [level]);
 
   useEffect(() => {
     fetchLogs();
-  }, [level]);
+  }, [fetchLogs]);
 
   return { logs, loading, error, refetch: fetchLogs };
 };

@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { retrieveRelevantDocuments } from './rag';
 import { generateWithFallback } from './generation/dispatcher';
 import { evaluateAnswer } from './ragasClient';

@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import jwt from 'jsonwebtoken';
 import { NextRequest } from 'next/server';
 import { getServiceSupabase } from './supabase';

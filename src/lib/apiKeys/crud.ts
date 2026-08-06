@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { getServiceSupabase } from '@/lib/supabase';
 import { encryptAndPackageKey, hashApiKey } from '@/lib/encryption';
 import { logError } from '@/lib/logger';

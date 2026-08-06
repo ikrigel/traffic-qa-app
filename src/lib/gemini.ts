@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { logError } from './logger';
 
