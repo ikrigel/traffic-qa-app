@@ -1,6 +1,6 @@
 {
   "name": "traffic-qa-app",
-  "version": "1.5.4",
+  "version": "1.5.5",
   "description": "Interactive Q&A app for learning Israeli traffic laws",
   "private": true,
   "scripts": {
