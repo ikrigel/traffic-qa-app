@@ -6,8 +6,8 @@ import QuestionList from '@/components/QuestionList';
 import CourseSelector from '@/components/CourseSelector';
 import HelpModal from '@/components/HelpModal';
 import AboutModal from '@/components/AboutModal';
+import SettingsModal from '@/components/SettingsModal';
 import ChatAssistant from '@/components/ChatAssistant';
-import ServerErrorBanner from '@/components/ServerErrorBanner';
 import { COURSES, getCourseQuestions } from '@/lib/questions';
 import { downloadPDF } from '@/lib/pdfGenerator';
 
@@ -16,6 +16,7 @@ export default function Home() {
   const [selectedCourseId, setSelectedCourseId] = useState('traffic-laws');
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const courseQuestions = getCourseQuestions(selectedCourseId);
   const selectedCourse = COURSES.find(c => c.id === selectedCourseId);
 
@@ -48,7 +49,6 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <ServerErrorBanner />
       {/* Header */}
       <header className="bg-white shadow-sm sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex justify-between items-center gap-2">
@@ -80,6 +80,15 @@ export default function Home() {
             >
               ℹ️
             </button>
+            {user && (
+              <button
+                onClick={() => setIsSettingsOpen(true)}
+                className="px-2 sm:px-3 py-2 text-xs sm:text-sm bg-orange-600 text-white rounded-lg hover:bg-orange-700 font-semibold whitespace-nowrap transition"
+                title="הגדרות"
+              >
+                ⚙️
+              </button>
+            )}
             {user && user.role !== 'user' && (
               <a
                 href="/admin"
@@ -198,6 +207,7 @@ export default function Home() {
       {/* Modals */}
       <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
       <AboutModal isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
+      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </main>
   );
 }
