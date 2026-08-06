@@ -53,17 +53,17 @@ export async function listCandidateKeys(userId: string): Promise<CandidateKey[]>
     const supabase = getServiceSupabase();
     const { data: userKeys, error } = await supabase
       .from('api_keys')
-      .select('id, provider, key_encrypted, is_default, priority')
+      .select('id, provider, key_encrypted, is_active, created_at')
       .eq('user_id', userId)
       .eq('is_active', true)
-      .order('priority', { ascending: true })
-      .order('is_default', { ascending: false })
       .order('created_at', { ascending: true });
 
     if (error) {
-      console.error('[API_KEYS] Failed to fetch user keys:', error);
+      console.error('[API_KEYS] Query failed:', error);
       throw error;
     }
+
+    console.log(`[API_KEYS] Fetched ${userKeys?.length || 0} keys for user ${userId}`);
 
     const candidates: CandidateKey[] = [];
 
@@ -71,16 +71,34 @@ export async function listCandidateKeys(userId: string): Promise<CandidateKey[]>
       for (const key of userKeys) {
         try {
           const decrypted = decryptPackagedKey(key.key_encrypted);
+          console.log(`[API_KEYS] Successfully decrypted ${key.provider} key ${key.id}`);
           candidates.push({
             keyId: key.id,
             apiKey: decrypted,
             provider: key.provider as AIProvider,
             source: 'user',
-            priority: key.priority,
           });
         } catch (decryptError) {
-          console.error(`[API_KEYS] Failed to decrypt key ${key.id}:`, decryptError);
+          console.error(`[API_KEYS] Decrypt failed for key ${key.id}:`, decryptError);
         }
+      }
+
+      // Try to fetch priority values if the column exists
+      try {
+        const { data: priorityData } = await supabase
+          .from('api_keys')
+          .select('id, priority')
+          .eq('user_id', userId)
+          .eq('is_active', true);
+
+        if (priorityData) {
+          const priorityMap = new Map(priorityData.map(p => [p.id, p.priority]));
+          candidates.forEach(c => {
+            c.priority = priorityMap.get(c.keyId);
+          });
+        }
+      } catch (priorityError) {
+        console.log('[API_KEYS] Priority column not available, using default ordering');
       }
 
       candidates.sort((a, b) => {
@@ -92,6 +110,8 @@ export async function listCandidateKeys(userId: string): Promise<CandidateKey[]>
         const bProviderOrder = PROVIDER_PRIORITY.indexOf(b.provider);
         return aProviderOrder - bProviderOrder;
       });
+
+      console.log(`[API_KEYS] Built ${candidates.length} candidates`, candidates.map(c => ({ provider: c.provider, priority: c.priority })));
     }
 
     if (candidates.length === 0) {

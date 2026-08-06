@@ -15,11 +15,15 @@ export async function generateWithFallback(
   try {
     const candidates = await listCandidateKeys(userId);
 
+    console.log(`[DISPATCHER] Found ${candidates.length} candidate keys for user ${userId}`);
+
     if (candidates.length === 0) {
+      console.log(`[DISPATCHER] No candidates, returning NO_API_KEY`);
       return { ok: false, code: 'NO_API_KEY', attempts: [] };
     }
 
     for (const candidate of candidates) {
+      console.log(`[DISPATCHER] Trying ${candidate.provider} (${candidate.source})`);
       try {
         const provider = providers[candidate.provider];
         if (!provider) {
@@ -27,6 +31,7 @@ export async function generateWithFallback(
         }
 
         const text = await provider.generate(candidate.apiKey, systemPrompt, userPrompt);
+        console.log(`[DISPATCHER] ✅ Success with ${candidate.provider}`);
 
         await trackApiKeyUsage(
           candidate.keyId,
