@@ -104,8 +104,7 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        const errorMsg = errorData.error || `Server error: ${response.status}`;
-        throw new Error(errorMsg);
+        throw Object.assign(new Error(errorData.error?.message || `Server error: ${response.status}`), { errorData });
       }
 
       const data = await response.json();
@@ -115,20 +114,19 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
       setResult(data);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Evaluation error:', errorMsg);
+      const errorCode = (error as any).errorData?.error?.code;
+      console.error('Evaluation error:', errorMsg, errorCode);
 
-      // Check if it's an API key error
-      if (
-        errorMsg.includes('API key') ||
-        errorMsg.includes('no api key') ||
-        errorMsg.includes('No API key') ||
-        errorMsg.toLowerCase().includes('missing key')
-      ) {
-        alert('🔑 You need to add an API key to use answer grading!\n\nClick the ⚙️ Settings button at the top, then go to "🔑 API Keys" and add a key from:\n- Groq (free & fast)\n- Google Gemini (free)\n- OpenAI (paid)\n- Ollama (local)\n- HuggingFace (free)');
+      if (errorCode === 'NO_API_KEY') {
+        alert('🔑 You need to add an API key to use answer grading!\n\nClick the ⚙️ Settings button at the top, then go to "🔑 API Keys" and add a key from:\n- Groq (free & fast)\n- Google Gemini (free)\n- OpenAI (paid)\n- HuggingFace (free)');
         return;
       }
 
-      // Generic error message
+      if (errorCode === 'ALL_KEYS_FAILED') {
+        alert('⚠️ All your API keys failed. Please check your keys in Settings or add a new one.');
+        return;
+      }
+
       alert('❌ Error: ' + errorMsg + '\n\nIf this persists, please add an API key in Settings (⚙️) → 🔑 API Keys');
     } finally {
       setLoading(false);

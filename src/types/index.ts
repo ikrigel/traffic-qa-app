@@ -129,6 +129,10 @@ export interface APIKey {
   createdAt: string;
   lastUsedAt?: string;
   rotatedAt?: string;
+  validationStatus?: 'unknown' | 'valid' | 'invalid';
+  lastValidatedAt?: string;
+  lastValidationError?: string;
+  priority?: number;
 }
 
 export interface ProviderConfig {

@@ -14,8 +14,14 @@ vi.mock('@/lib/rag', () => ({
   ]),
 }));
 
-vi.mock('@/lib/gemini', () => ({
-  generateAnswer: vi.fn().mockResolvedValue('Your answer is partially correct. The speed limit is indeed 50 km/h.'),
+vi.mock('@/lib/generation/dispatcher', () => ({
+  generateWithFallback: vi.fn().mockResolvedValue({
+    ok: true,
+    text: 'Your answer is partially correct. The speed limit is indeed 50 km/h.',
+    provider: 'gemini',
+    keySource: 'admin',
+    attempts: [],
+  }),
 }));
 
 vi.mock('@/lib/logger', () => ({
@@ -31,6 +37,7 @@ describe('User Answer Grading', () => {
   describe('gradeUserAnswer', () => {
     it('should return verdict and feedback', async () => {
       const result = await gradeUserAnswer({
+        userId: 'test-user',
         question: 'What is the speed limit in urban areas?',
         correctAnswer: '50 km/h',
         userAnswer: '50 km/h',
@@ -45,6 +52,7 @@ describe('User Answer Grading', () => {
 
     it('should include metrics in result', async () => {
       const result = await gradeUserAnswer({
+        userId: 'test-user',
         question: 'What is the speed limit in urban areas?',
         correctAnswer: '50 km/h',
         userAnswer: '50 km/h',
@@ -57,6 +65,7 @@ describe('User Answer Grading', () => {
 
     it('should return correct verdict for exact match', async () => {
       const result = await gradeUserAnswer({
+        userId: 'test-user',
         question: 'Test question',
         correctAnswer: 'correct answer',
         userAnswer: 'correct answer',
@@ -68,6 +77,7 @@ describe('User Answer Grading', () => {
 
     it('should return incorrect verdict for mismatched answer', async () => {
       const result = await gradeUserAnswer({
+        userId: 'test-user',
         question: 'What is 2+2?',
         correctAnswer: '4',
         userAnswer: 'banana',
@@ -80,6 +90,7 @@ describe('User Answer Grading', () => {
     it('should handle grading errors gracefully', async () => {
       // Test that function doesn't throw even if something fails
       const result = await gradeUserAnswer({
+        userId: 'test-user',
         question: 'question',
         correctAnswer: 'correct',
         userAnswer: 'answer',

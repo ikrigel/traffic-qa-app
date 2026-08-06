@@ -1,10 +1,11 @@
 import { retrieveRelevantDocuments } from './rag';
-import { generateAnswer } from './gemini';
+import { generateWithFallback } from './generation/dispatcher';
 import { evaluateAnswer } from './ragasClient';
 import { logError } from './logger';
 import type { RagasMetrics } from '@/types';
 
 interface GradingInput {
+  userId: string;
   question: string;
   correctAnswer: string;
   userAnswer: string;
@@ -62,9 +63,9 @@ export const gradeUserAnswer = async (input: GradingInput): Promise<GradingResul
 תן משוב קצר וחכם (שורה אחת בעברית) על התשובה של המשתמש.
       `;
 
-      const generatedFeedback = await generateAnswer('', feedbackPrompt);
-      if (generatedFeedback) {
-        feedback = generatedFeedback;
+      const feedbackResult = await generateWithFallback(input.userId, '', feedbackPrompt, 'grading');
+      if (feedbackResult.ok) {
+        feedback = feedbackResult.text;
       }
     } catch (feedbackError) {
       console.error('Feedback generation failed:', feedbackError);
@@ -72,7 +73,9 @@ export const gradeUserAnswer = async (input: GradingInput): Promise<GradingResul
         source: 'grading.generateAnswer',
         message: feedbackError instanceof Error ? feedbackError.message : 'Feedback generation failed',
       });
-      // Use fallback feedback based on verdict
+    }
+
+    if (feedback === 'לא ניתן ליצור משוב כרגע') {
       if (verdict === 'correct') {
         feedback = 'תשובה נכונה! כל הכבוד.';
       } else if (verdict === 'partial') {

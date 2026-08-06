@@ -36,14 +36,6 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('[EVALUATE] Validating environment variables...');
-    if (!process.env.GEMINI_API_KEY) {
-      console.error('[EVALUATE] GEMINI_API_KEY not set');
-      return NextResponse.json(
-        { error: 'Server configuration error: Missing GEMINI_API_KEY' },
-        { status: 500 }
-      );
-    }
-
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
       console.error('[EVALUATE] SUPABASE_SERVICE_ROLE_KEY not set');
       return NextResponse.json(
@@ -56,6 +48,7 @@ export async function POST(request: NextRequest) {
     try {
       console.log('[EVALUATE] Starting grading process...');
       const gradingPromise = gradeUserAnswer({
+        userId: user.id,
         question: questionText,
         correctAnswer,
         userAnswer,

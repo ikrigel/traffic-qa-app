@@ -18,6 +18,7 @@ export async function POST(request: NextRequest) {
 
     try {
       const result = await gradeUserAnswer({
+        userId: 'debug-user',
         question,
         correctAnswer,
         userAnswer,

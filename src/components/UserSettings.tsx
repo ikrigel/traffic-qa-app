@@ -70,7 +70,7 @@ export default function UserSettings() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to add API key');
+        throw new Error(errorData.error?.message ?? errorData.error ?? 'Failed to add API key');
       }
 
       setSuccess('✅ API key added successfully!');
@@ -124,6 +124,51 @@ export default function UserSettings() {
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to set default key';
+      setError(message);
+    }
+  };
+
+  const handleTestKey = async (keyId: string) => {
+    try {
+      setError(null);
+      const response = await fetch(`/api/user/keys/${keyId}/test`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error?.message || 'Failed to test key');
+      }
+
+      setSuccess('✅ Key is valid!');
+      fetchApiKeys();
+
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to test key';
+      setError(message);
+    }
+  };
+
+  const handleSetPriority = async (keyId: string, priority: number) => {
+    try {
+      const response = await fetch(`/api/user/keys/${keyId}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'setPriority', priority }),
+      });
+
+      if (!response.ok) throw new Error('Failed to update priority');
+
+      setSuccess('✅ Priority updated');
+      fetchApiKeys();
+
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to update priority';
       setError(message);
     }
   };
@@ -307,6 +352,15 @@ export default function UserSettings() {
         </form>
       </div>
 
+      {/* Single Key Hint */}
+      {apiKeys.length === 1 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <p className="text-blue-800 text-sm">
+            💡 <strong>Tip:</strong> Add a backup key from another provider so grading and chat keep working if this one hits a rate limit.
+          </p>
+        </div>
+      )}
+
       {/* Existing Keys */}
       {apiKeys.length > 0 && (
         <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
@@ -322,7 +376,7 @@ export default function UserSettings() {
                     : 'bg-gray-50 border-gray-200'
                 }`}
               >
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <h4 className="font-semibold text-gray-800">
@@ -333,33 +387,72 @@ export default function UserSettings() {
                           Default
                         </span>
                       )}
+                      {key.validationStatus === 'valid' && (
+                        <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded font-semibold">
+                          ✅ Valid
+                        </span>
+                      )}
+                      {key.validationStatus === 'invalid' && (
+                        <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded font-semibold">
+                          ❌ Invalid
+                        </span>
+                      )}
+                      {!key.validationStatus || key.validationStatus === 'unknown' && (
+                        <span className="px-2 py-1 bg-gray-200 text-gray-700 text-xs rounded font-semibold">
+                          ⚪ Untested
+                        </span>
+                      )}
                     </div>
                     <p className="text-sm text-gray-600 mt-1">
                       Provider: <span className="font-mono font-semibold">{key.provider}</span>
                     </p>
+                    {key.lastValidatedAt && key.validationStatus === 'invalid' && key.lastValidationError && (
+                      <p className="text-xs text-red-600 mt-1">
+                        Error: {key.lastValidationError}
+                      </p>
+                    )}
                     {key.lastUsedAt && (
                       <p className="text-xs text-gray-500 mt-1">
                         Last used: {new Date(key.lastUsedAt).toLocaleDateString()}
                       </p>
                     )}
                   </div>
+                </div>
 
-                  <div className="flex gap-2">
-                    {!key.isDefault && (
-                      <button
-                        onClick={() => handleSetDefault(key.id)}
-                        className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-sm hover:bg-blue-200 transition"
-                      >
-                        Set Default
-                      </button>
-                    )}
+                <div className="flex gap-2 flex-wrap mb-3">
+                  <button
+                    onClick={() => handleTestKey(key.id)}
+                    className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-sm hover:bg-blue-200 transition"
+                  >
+                    🧪 Test
+                  </button>
+                  {!key.isDefault && (
                     <button
-                      onClick={() => handleDeleteKey(key.id)}
-                      className="px-3 py-1 bg-red-100 text-red-700 rounded text-sm hover:bg-red-200 transition"
+                      onClick={() => handleSetDefault(key.id)}
+                      className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded text-sm hover:bg-indigo-200 transition"
                     >
-                      Delete
+                      Set Default
                     </button>
-                  </div>
+                  )}
+                  <button
+                    onClick={() => handleDeleteKey(key.id)}
+                    className="px-3 py-1 bg-red-100 text-red-700 rounded text-sm hover:bg-red-200 transition"
+                  >
+                    Delete
+                  </button>
+                </div>
+
+                <div className="flex gap-2 items-center">
+                  <label className="text-xs font-semibold text-gray-700">Priority:</label>
+                  <input
+                    type="range"
+                    min="1"
+                    max="10"
+                    value={key.priority || 5}
+                    onChange={e => handleSetPriority(key.id, parseInt(e.target.value))}
+                    className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                  />
+                  <span className="text-xs text-gray-600 w-6 text-right">{key.priority || 5}</span>
                 </div>
               </div>
             ))}

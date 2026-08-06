@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/session';
-import { deleteApiKey, setDefaultApiKey } from '@/lib/apiKeysService';
+import { deleteApiKey, setDefaultApiKey, updateKeyPriority } from '@/lib/apiKeys';
+import { apiError } from '@/lib/apiErrors';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,11 +13,10 @@ export async function DELETE(
   try {
     const user = await getSessionUser(request);
     if (!user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+      return apiError('NOT_AUTHENTICATED', 'Not authenticated', 401);
     }
 
     const { id } = params;
-
     const success = await deleteApiKey(id, user.id);
 
     if (!success) {
@@ -30,11 +30,15 @@ export async function DELETE(
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Failed to delete key';
     console.error('[API_KEYS] DELETE error:', msg);
-    return NextResponse.json({ error: msg }, { status: 500 });
+
+    if (msg.includes('Unauthorized')) {
+      return apiError('UNAUTHORIZED_KEY_ACCESS', msg, 403);
+    }
+
+    return apiError('INTERNAL_ERROR', msg, 500);
   }
 }
 
-// PATCH /api/user/keys/[id]/default - Set as default
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -42,13 +46,31 @@ export async function PATCH(
   try {
     const user = await getSessionUser(request);
     if (!user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+      return apiError('NOT_AUTHENTICATED', 'Not authenticated', 401);
     }
 
     const { id } = params;
+    const body = await request.json().catch(() => ({}));
+    const action = body.action || 'setDefault';
+
+    if (action === 'setPriority') {
+      const priority = body.priority;
+      if (priority === undefined || priority === null) {
+        return apiError('MISSING_FIELDS', 'Priority is required', 400);
+      }
+
+      const success = await updateKeyPriority(id, user.id, priority);
+      if (!success) {
+        throw new Error('Failed to update priority');
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: 'Key priority updated successfully',
+      });
+    }
 
     const success = await setDefaultApiKey(id, user.id);
-
     if (!success) {
       throw new Error('Failed to set default key');
     }
@@ -60,6 +82,11 @@ export async function PATCH(
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Failed to update key';
     console.error('[API_KEYS] PATCH error:', msg);
-    return NextResponse.json({ error: msg }, { status: 500 });
+
+    if (msg.includes('Unauthorized')) {
+      return apiError('UNAUTHORIZED_KEY_ACCESS', msg, 403);
+    }
+
+    return apiError('INTERNAL_ERROR', msg, 500);
   }
 }

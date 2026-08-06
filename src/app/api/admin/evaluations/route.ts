@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireRole } from '@/lib/requireRole';
 import { getServiceSupabase } from '@/lib/supabase';
 import { retrieveRelevantDocuments } from '@/lib/rag';
-import { generateAnswer } from '@/lib/gemini';
+import { generateWithFallback } from '@/lib/generation/dispatcher';
 import { evaluateAnswer } from '@/lib/ragasClient';
 
 export const dynamic = 'force-dynamic';
@@ -53,7 +53,15 @@ export async function POST(request: NextRequest) {
 
     const systemPrompt = `You are an expert in Israeli traffic laws. Answer the following question based on the provided context. If the context doesn't contain relevant information, say "I don't have enough information to answer this question."`;
 
-    const aiAnswer = await generateAnswer(systemPrompt, question);
+    const generationResult = await generateWithFallback(auth.user.id, systemPrompt, question, 'generation');
+    if (!generationResult.ok) {
+      return NextResponse.json(
+        { error: `Failed to generate answer: ${generationResult.code}` },
+        { status: 502 }
+      );
+    }
+
+    const aiAnswer = generationResult.text;
 
     const metrics = expectedAnswer
       ? await evaluateAnswer(question, aiAnswer, context, expectedAnswer)
