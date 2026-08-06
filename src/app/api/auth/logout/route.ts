@@ -3,7 +3,7 @@ import { AUTH_COOKIE_NAME } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   const response = NextResponse.json({ success: true });
   response.cookies.delete(AUTH_COOKIE_NAME);
   return response;
