@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AUTH_COOKIE_NAME } from '@/lib/session';
 
+// Clear session auth token
 export const dynamic = 'force-dynamic';
 
 export async function POST(_request: NextRequest) {
