@@ -56,7 +56,7 @@ export async function listCandidateKeys(userId: string): Promise<CandidateKey[]>
       .select('id, provider, key_encrypted, is_default, priority')
       .eq('user_id', userId)
       .eq('is_active', true)
-      .order('priority', { ascending: true, nullsFirst: false })
+      .order('priority', { ascending: true })
       .order('is_default', { ascending: false })
       .order('created_at', { ascending: true });
 
@@ -82,6 +82,16 @@ export async function listCandidateKeys(userId: string): Promise<CandidateKey[]>
           console.error(`[API_KEYS] Failed to decrypt key ${key.id}:`, decryptError);
         }
       }
+
+      candidates.sort((a, b) => {
+        const aPriority = a.priority ?? Infinity;
+        const bPriority = b.priority ?? Infinity;
+        if (aPriority !== bPriority) return aPriority - bPriority;
+
+        const aProviderOrder = PROVIDER_PRIORITY.indexOf(a.provider);
+        const bProviderOrder = PROVIDER_PRIORITY.indexOf(b.provider);
+        return aProviderOrder - bProviderOrder;
+      });
     }
 
     if (candidates.length === 0) {
