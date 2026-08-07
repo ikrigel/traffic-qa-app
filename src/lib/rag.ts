@@ -16,22 +16,29 @@ export const retrieveRelevantDocuments = async (
   limit = 5
 ): Promise<RetrievedDocument[]> => {
   try {
-    console.log('[RAG] Retrieving documents for query:', query.substring(0, 50));
+    console.log('[RAG] ===== retrieveRelevantDocuments called =====');
+    console.log('[RAG] Query:', query.substring(0, 50));
+    console.log('[RAG] Limit:', limit);
+    console.log('[RAG] Step 1: Calling embedText...');
     const queryEmbedding = await embedText(query);
-    console.log('[RAG] Query embedded, calling RPC...');
+    console.log('[RAG] Step 2: ✅ Query embedded successfully, dimensions:', queryEmbedding.length);
+    console.log('[RAG] Step 3: Getting Supabase client...');
 
+    console.log('[RAG] Step 4: Getting Supabase client...');
     const supabase = getServiceSupabase();
+    console.log('[RAG] Step 5: Calling RPC match_rag_documents...');
+
     const { data, error } = await supabase.rpc('match_rag_documents', {
       query_embedding: queryEmbedding,
       match_count: limit,
     });
 
     if (error) {
-      console.error('[RAG] RPC error:', error);
+      console.error('[RAG] ❌ RPC error:', error);
       throw error;
     }
 
-    console.log('[RAG] RPC returned', data?.length || 0, 'documents');
+    console.log('[RAG] Step 6: ✅ RPC returned', data?.length || 0, 'documents');
 
     return (data || []).map((doc: any) => ({
       id: doc.id,
