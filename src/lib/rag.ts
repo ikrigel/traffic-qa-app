@@ -49,8 +49,8 @@ export const retrieveRelevantDocuments = async (
     }));
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Document retrieval failed';
-    console.error('[RAG] Document retrieval error:', message, error);
-    await logError({ source: 'rag.retrieveRelevantDocuments', message });
+    console.error('[RAG] ⚠️ Document retrieval error (graceful fallback):', message);
+    await logError({ source: 'rag.retrieveRelevantDocuments', message, context: { gracefullFallback: true } });
     return [];
   }
 };

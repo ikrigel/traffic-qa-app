@@ -20,7 +20,12 @@ export async function POST(request: NextRequest) {
 
     const documents = await retrieveRelevantDocuments(message, 5);
 
-    const systemPrompt = `You are a helpful assistant specializing in Israeli traffic laws. Answer the user's question based on the provided context. If the context doesn't contain relevant information, say "I don't have enough information to answer this question." Respond in Hebrew.\n\nContext:\n${documents.map(doc => `**${doc.title}**\n${doc.content}`).join('\n\n')}`;
+    let systemPrompt: string;
+    if (documents.length > 0) {
+      systemPrompt = `You are a helpful assistant specializing in Israeli traffic laws. Answer the user's question based on the provided context. If the context doesn't contain relevant information, say "I don't have enough information to answer this question." Respond in Hebrew.\n\nContext:\n${documents.map(doc => `**${doc.title}**\n${doc.content}`).join('\n\n')}`;
+    } else {
+      systemPrompt = `You are a helpful assistant specializing in Israeli traffic laws. Answer the user's question to the best of your knowledge. If you cannot answer, say "I don't have enough information to answer this question." Respond in Hebrew.\n\nNote: No reference documents are currently available.`;
+    }
 
     const result = await generateWithFallback(user.id, systemPrompt, message, 'generation');
 
