@@ -45,7 +45,8 @@ export const embedText = async (text: string): Promise<number[]> => {
     const client = getGeminiClient();
     console.log('[GEMINI] Client obtained, getting model...');
 
-    const model = client.getGenerativeModel({ model: 'embedding-001' });
+    console.log('[GEMINI] Getting embedding model (text-embedding-004)...');
+    const model = client.getGenerativeModel({ model: 'text-embedding-004' });
     console.log('[GEMINI] Model obtained, calling embedContent...');
 
     const result = await model.embedContent(text);
