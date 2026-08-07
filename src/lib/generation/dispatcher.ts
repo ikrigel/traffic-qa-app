@@ -31,8 +31,9 @@ export async function generateWithFallback(
           throw new Error(`Unknown provider: ${candidate.provider}`);
         }
 
+        console.log(`[DISPATCHER] Calling ${candidate.provider}.generate()...`);
         const text = await provider.generate(candidate.apiKey, systemPrompt, userPrompt);
-        console.log(`[DISPATCHER] ✅ Success with ${candidate.provider}`);
+        console.log(`[DISPATCHER] ✅ Success with ${candidate.provider}, text length: ${text.length}`);
 
         await trackApiKeyUsage(
           candidate.keyId,
@@ -61,6 +62,8 @@ export async function generateWithFallback(
           errorMessage = error.message;
         }
 
+        console.log(`[DISPATCHER] ❌ ${candidate.provider} failed: ${errorCode} - ${errorMessage}`);
+
         attempts.push({
           provider: candidate.provider,
           source: candidate.source,
@@ -69,6 +72,7 @@ export async function generateWithFallback(
           errorMessage,
         });
 
+        console.log(`[DISPATCHER] Tracking usage for failed attempt...`);
         await trackApiKeyUsage(
           candidate.keyId,
           userId,
@@ -78,15 +82,18 @@ export async function generateWithFallback(
           false,
           errorMessage
         );
+        console.log(`[DISPATCHER] Usage tracked, moving to next candidate...`);
       }
     }
 
+    console.log(`[DISPATCHER] ⚠️ All attempts exhausted, logging error...`);
     await logError({
       source: 'dispatcher.generateWithFallback',
       message: `All fallback attempts failed for user ${userId}`,
       context: { attempts, operation },
     });
 
+    console.log(`[DISPATCHER] ✅ Returning ALL_KEYS_FAILED result`);
     return { ok: false, code: 'ALL_KEYS_FAILED', attempts };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Dispatch failed';
