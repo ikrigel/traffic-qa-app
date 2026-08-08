@@ -63,10 +63,10 @@ export function getSupportedFileType(filename: string): SupportedFileType | null
 async function parsePDF(buffer: Buffer): Promise<string> {
   console.log('[PDF-PARSER] Starting PDF text extraction...');
   try {
-    // Dynamic import - use legacy build for Node.js compatibility
+    // Dynamic import - load pdfjs-dist module
     if (!pdfjsLib) {
       // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
-      pdfjsLib = require('pdfjs-dist/legacy/build/pdf.js');
+      pdfjsLib = require('pdfjs-dist/build/pdf.mjs');
 
       if (typeof window === 'undefined' && pdfjsLib.GlobalWorkerOptions) {
         pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
