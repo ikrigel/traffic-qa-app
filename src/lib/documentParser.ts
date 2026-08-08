@@ -68,13 +68,18 @@ async function parsePDF(buffer: Buffer): Promise<string> {
       // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
       pdfjsLib = require('pdfjs-dist/build/pdf.mjs');
 
+      // Disable worker for text extraction only (no rendering needed)
       if (typeof window === 'undefined' && pdfjsLib.GlobalWorkerOptions) {
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+        pdfjsLib.GlobalWorkerOptions.workerSrc = null;
       }
     }
 
     const uint8Array = new Uint8Array(buffer);
-    const pdf = await pdfjsLib.getDocument({ data: uint8Array }).promise;
+    const pdf = await pdfjsLib.getDocument({
+      data: uint8Array,
+      disableWorker: true,
+      disableStream: true,
+    }).promise;
     console.log(`[PDF-PARSER] PDF loaded, ${pdf.numPages} pages found`);
 
     let fullText = '';
