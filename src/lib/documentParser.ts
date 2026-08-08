@@ -1,11 +1,7 @@
 /* eslint-disable no-console */
 import mammoth from 'mammoth';
-import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 
-// Use the worker file from pdfjs-dist
-if (typeof window === 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-}
+let pdfjsLib: any;
 
 export type SupportedFileType = 'pdf' | 'docx' | 'txt';
 
@@ -26,6 +22,15 @@ export function getSupportedFileType(filename: string): SupportedFileType | null
 async function parsePDF(buffer: Buffer): Promise<string> {
   console.log('[PDF-PARSER] Starting PDF text extraction...');
   try {
+    // Dynamic import to avoid TypeScript resolution issues
+    if (!pdfjsLib) {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires, import/no-dynamic-require, global-require
+      pdfjsLib = (await (import('pdfjs-dist') as any)).default;
+      if (typeof window === 'undefined' && pdfjsLib.GlobalWorkerOptions) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+      }
+    }
+
     const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
     console.log(`[PDF-PARSER] PDF loaded, ${pdf.numPages} pages found`);
 
