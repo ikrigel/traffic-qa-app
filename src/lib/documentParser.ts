@@ -22,10 +22,11 @@ export function getSupportedFileType(filename: string): SupportedFileType | null
 async function parsePDF(buffer: Buffer): Promise<string> {
   console.log('[PDF-PARSER] Starting PDF text extraction...');
   try {
-    // Dynamic import to avoid TypeScript resolution issues
+    // Dynamic import - module exists at runtime
     if (!pdfjsLib) {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires, import/no-dynamic-require, global-require
-      pdfjsLib = (await (import('pdfjs-dist') as any)).default;
+      // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
+      pdfjsLib = require('pdfjs-dist');
+
       if (typeof window === 'undefined' && pdfjsLib.GlobalWorkerOptions) {
         pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
       }
