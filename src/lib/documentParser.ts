@@ -73,7 +73,8 @@ async function parsePDF(buffer: Buffer): Promise<string> {
       }
     }
 
-    const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+    const uint8Array = new Uint8Array(buffer);
+    const pdf = await pdfjsLib.getDocument({ data: uint8Array }).promise;
     console.log(`[PDF-PARSER] PDF loaded, ${pdf.numPages} pages found`);
 
     let fullText = '';
