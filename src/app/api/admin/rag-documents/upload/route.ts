@@ -46,24 +46,30 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        console.log(`[RAG-UPLOAD] Processing file ${i + 1}/${files.length}: "${file.name}"`);
+        console.log(`[RAG-UPLOAD] 🔄 Processing file ${i + 1}/${files.length}: "${file.name}"`);
+        console.log(`[RAG-UPLOAD] 📊 File size: ${(file.size / 1024).toFixed(2)}KB`);
+        console.log(`[RAG-UPLOAD] 🏷️ File type: ${file.type}`);
 
         // Convert File to Buffer
+        console.log(`[RAG-UPLOAD] 🔀 Converting File to Buffer...`);
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
+        console.log(`[RAG-UPLOAD] ✅ Buffer created: ${buffer.length} bytes`);
 
         // Parse document
-        console.log(`[RAG-UPLOAD] Parsing document...`);
+        console.log(`[RAG-UPLOAD] 📝 Parsing document...`);
         const parsed = await parseDocument(buffer, file.name);
         console.log(`[RAG-UPLOAD] ✅ Document parsed: "${parsed.title}"`);
+        console.log(`[RAG-UPLOAD] 📄 Content length: ${parsed.content.length} characters`);
+        console.log(`[RAG-UPLOAD] 🎯 File type detected: ${parsed.fileType}`);
 
         // Generate embedding
-        console.log(`[RAG-UPLOAD] Generating embedding...`);
+        console.log(`[RAG-UPLOAD] 🧮 Generating embedding...`);
         const embedding = await embedText(parsed.content);
         console.log(`[RAG-UPLOAD] ✅ Embedding generated (${embedding.length} dimensions)`);
 
         // Insert into database
-        console.log(`[RAG-UPLOAD] Inserting into database...`);
+        console.log(`[RAG-UPLOAD] 💾 Inserting into Supabase...`);
         const { data, error } = await supabase
           .from('rag_documents')
           .insert({
@@ -83,7 +89,10 @@ export async function POST(request: NextRequest) {
           .single();
 
         if (error) {
-          console.error(`[RAG-UPLOAD] ❌ Database error for "${file.name}":`, error);
+          console.error(`[RAG-UPLOAD] ❌ DATABASE ERROR for "${file.name}":`);
+          console.error(`[RAG-UPLOAD] Error code: ${error.code}`);
+          console.error(`[RAG-UPLOAD] Error message: ${error.message}`);
+          console.error(`[RAG-UPLOAD] Error details:`, error);
           results.push({
             filename: file.name,
             success: false,

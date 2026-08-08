@@ -59,33 +59,55 @@ export function getSupportedFileType(filename: string): SupportedFileType | null
 }
 
 async function parsePDF(buffer: Buffer): Promise<string> {
-  console.log('[PDF-PARSER] Starting PDF text extraction...');
+  console.log('[PDF-PARSER] 🔍 Starting PDF text extraction...');
+  console.log(`[PDF-PARSER] 📊 Buffer size: ${buffer.length} bytes`);
+
   try {
     // Use pdf-text-extract - simple Node.js library for text extraction
+    console.log('[PDF-PARSER] 📦 Requiring pdf-text-extract library...');
     // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
     const pdfExtract = require('pdf-text-extract');
+    console.log('[PDF-PARSER] ✅ pdf-text-extract loaded');
 
     return new Promise((resolve, reject) => {
+      console.log('[PDF-PARSER] 🔄 Starting extraction with buffer...');
       // pdf-text-extract requires a file path, so we use a callback approach
       pdfExtract(buffer, { type: 'buffer' }, (err: any, pages: any) => {
+        console.log('[PDF-PARSER] 📞 Extraction callback triggered');
+
         if (err) {
-          console.error('[PDF-PARSER] Extraction error:', err);
-          reject(new Error(`PDF extraction failed: ${err.message}`));
+          console.error('[PDF-PARSER] ❌ EXTRACTION ERROR DETAILS:');
+          console.error(`[PDF-PARSER] Error type: ${err.constructor.name}`);
+          console.error(`[PDF-PARSER] Error message: ${err.message}`);
+          console.error(`[PDF-PARSER] Error stack: ${err.stack}`);
+          reject(new Error(`PDF extraction failed at library level: ${err.message}`));
           return;
         }
+
+        console.log(`[PDF-PARSER] 📄 Extraction successful. Pages received: ${typeof pages}, is array: ${Array.isArray(pages)}`);
 
         if (!pages || !Array.isArray(pages)) {
-          console.error('[PDF-PARSER] No pages extracted');
-          reject(new Error('No text pages extracted from PDF'));
+          console.error('[PDF-PARSER] ❌ INVALID RESPONSE:');
+          console.error(`[PDF-PARSER] Pages type: ${typeof pages}`);
+          console.error(`[PDF-PARSER] Pages value: ${JSON.stringify(pages)}`);
+          reject(new Error(`Invalid pages response: ${typeof pages}, expected array`));
           return;
         }
 
+        console.log(`[PDF-PARSER] 📑 Processing ${pages.length} pages...`);
         const fullText = pages.join('\n');
-        console.log(`[PDF-PARSER] ✅ Extracted ${fullText.length} characters from ${pages.length} pages`);
+        console.log(`[PDF-PARSER] ✅ Text concatenation complete`);
+        console.log(`[PDF-PARSER] 📈 Extracted ${fullText.length} characters from ${pages.length} pages`);
         resolve(fullText.trim());
       });
     });
   } catch (error) {
+    console.error('[PDF-PARSER] ❌ SYNC ERROR CAUGHT:');
+    console.error(`[PDF-PARSER] Error type: ${error instanceof Error ? error.constructor.name : typeof error}`);
+    console.error(`[PDF-PARSER] Error message: ${error instanceof Error ? error.message : String(error)}`);
+    if (error instanceof Error) {
+      console.error(`[PDF-PARSER] Error stack: ${error.stack}`);
+    }
     const message = error instanceof Error ? error.message : 'PDF parsing failed';
     throw new Error(`PDF extraction error: ${message}`);
   }
