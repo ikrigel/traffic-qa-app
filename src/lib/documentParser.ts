@@ -1,6 +1,47 @@
 /* eslint-disable no-console */
 import mammoth from 'mammoth';
 
+// Polyfill DOM APIs for Node.js environment (required by pdfjs-dist)
+if (typeof globalThis !== 'undefined' && !globalThis.DOMMatrix) {
+  // @ts-expect-error - Polyfill for Node.js
+  globalThis.DOMMatrix = class DOMMatrix {
+    constructor(init?: any) {
+      return init || {};
+    }
+  };
+}
+
+if (typeof globalThis !== 'undefined' && !globalThis.ImageData) {
+  // @ts-expect-error - Polyfill for Node.js
+  globalThis.ImageData = class ImageData {
+    width: number;
+    height: number;
+    data: Uint8ClampedArray;
+
+    constructor(width: number, height: number) {
+      this.width = width;
+      this.height = height;
+      this.data = new Uint8ClampedArray(width * height * 4);
+    }
+  };
+}
+
+if (typeof globalThis !== 'undefined' && !globalThis.Path2D) {
+  // @ts-expect-error - Polyfill for Node.js
+  globalThis.Path2D = class Path2D {
+    addPath() {}
+    closePath() {}
+    moveTo() {}
+    lineTo() {}
+    bezierCurveTo() {}
+    quadraticCurveTo() {}
+    arc() {}
+    arcTo() {}
+    ellipse() {}
+    rect() {}
+  };
+}
+
 let pdfjsLib: any;
 
 export type SupportedFileType = 'pdf' | 'docx' | 'txt';
@@ -22,10 +63,10 @@ export function getSupportedFileType(filename: string): SupportedFileType | null
 async function parsePDF(buffer: Buffer): Promise<string> {
   console.log('[PDF-PARSER] Starting PDF text extraction...');
   try {
-    // Dynamic import - module exists at runtime
+    // Dynamic import - use legacy build for Node.js compatibility
     if (!pdfjsLib) {
       // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
-      pdfjsLib = require('pdfjs-dist');
+      pdfjsLib = require('pdfjs-dist/legacy/build/pdf.js');
 
       if (typeof window === 'undefined' && pdfjsLib.GlobalWorkerOptions) {
         pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
