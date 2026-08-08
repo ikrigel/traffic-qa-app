@@ -13,7 +13,7 @@ const groqProvider: GenerationProvider = {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'llama-3.1-70b-versatile',
+          model: 'llama-3.1-8b-instant',
           messages: [{ role: 'user', content: fullPrompt }],
           temperature: 0.7,
           max_tokens: 1024,
