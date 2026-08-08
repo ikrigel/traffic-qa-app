@@ -63,34 +63,29 @@ export function getSupportedFileType(filename: string): SupportedFileType | null
 async function parsePDF(buffer: Buffer): Promise<string> {
   console.log('[PDF-PARSER] Starting PDF text extraction...');
   try {
-    // Dynamic import - load pdfjs-dist module
+    // Use pdfjs library - simpler than pdfjs-dist, no worker issues
     if (!pdfjsLib) {
       // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
-      pdfjsLib = require('pdfjs-dist/build/pdf.mjs');
+      pdfjsLib = require('pdfjs');
     }
 
-    const uint8Array = new Uint8Array(buffer);
-    const pdf = await pdfjsLib.getDocument({
-      data: uint8Array,
-      disableWorker: true,
-      disableAutoFetch: true,
-      disableStream: true,
-    }).promise;
-    console.log(`[PDF-PARSER] PDF loaded, ${pdf.numPages} pages found`);
+    console.log('[PDF-PARSER] Parsing PDF buffer...');
+    const doc = new pdfjsLib.Document(buffer);
 
     let fullText = '';
-    for (let i = 1; i <= pdf.numPages; i++) {
+    console.log(`[PDF-PARSER] Document has ${doc.numPages} pages`);
+
+    for (let pageNum = 1; pageNum <= doc.numPages; pageNum++) {
       try {
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        const pageText = textContent.items.map((item: any) => item.str || '').join(' ');
+        const page = doc.getPage(pageNum);
+        const pageText = page.getTextContent();
         fullText += pageText + '\n';
       } catch (pageError) {
-        console.warn(`[PDF-PARSER] ⚠️ Warning extracting page ${i}:`, pageError instanceof Error ? pageError.message : 'Unknown error');
+        console.warn(`[PDF-PARSER] ⚠️ Warning extracting page ${pageNum}:`, pageError instanceof Error ? pageError.message : 'Unknown error');
       }
     }
 
-    console.log(`[PDF-PARSER] ✅ Extracted ${fullText.length} characters from ${pdf.numPages} pages`);
+    console.log(`[PDF-PARSER] ✅ Extracted ${fullText.length} characters from ${doc.numPages} pages`);
     return fullText.trim();
   } catch (error) {
     const message = error instanceof Error ? error.message : 'PDF parsing failed';
