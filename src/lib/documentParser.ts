@@ -1,5 +1,11 @@
 /* eslint-disable no-console */
 import mammoth from 'mammoth';
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
+
+// Use the worker file from pdfjs-dist
+if (typeof window === 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+}
 
 export type SupportedFileType = 'pdf' | 'docx' | 'txt';
 
@@ -18,11 +24,29 @@ export function getSupportedFileType(filename: string): SupportedFileType | null
 }
 
 async function parsePDF(buffer: Buffer): Promise<string> {
-  // Use dynamic import to work around CJS/ESM mismatch
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const pdfParse = (await (import('pdf-parse') as any)).default;
-  const data = await pdfParse(buffer);
-  return data.text || '';
+  console.log('[PDF-PARSER] Starting PDF text extraction...');
+  try {
+    const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+    console.log(`[PDF-PARSER] PDF loaded, ${pdf.numPages} pages found`);
+
+    let fullText = '';
+    for (let i = 1; i <= pdf.numPages; i++) {
+      try {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map((item: any) => item.str || '').join(' ');
+        fullText += pageText + '\n';
+      } catch (pageError) {
+        console.warn(`[PDF-PARSER] ⚠️ Warning extracting page ${i}:`, pageError instanceof Error ? pageError.message : 'Unknown error');
+      }
+    }
+
+    console.log(`[PDF-PARSER] ✅ Extracted ${fullText.length} characters from ${pdf.numPages} pages`);
+    return fullText.trim();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'PDF parsing failed';
+    throw new Error(`PDF extraction error: ${message}`);
+  }
 }
 
 export async function parseDocument(buffer: Buffer, filename: string): Promise<ParsedDocument> {
