@@ -42,8 +42,6 @@ if (typeof globalThis !== 'undefined' && !globalThis.Path2D) {
   };
 }
 
-let pdfjsLib: any;
-
 export type SupportedFileType = 'pdf' | 'docx' | 'txt';
 
 export interface ParsedDocument {
@@ -63,30 +61,30 @@ export function getSupportedFileType(filename: string): SupportedFileType | null
 async function parsePDF(buffer: Buffer): Promise<string> {
   console.log('[PDF-PARSER] Starting PDF text extraction...');
   try {
-    // Use pdfjs library - simpler than pdfjs-dist, no worker issues
-    if (!pdfjsLib) {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
-      pdfjsLib = require('pdfjs');
-    }
+    // Use pdf-text-extract - simple Node.js library for text extraction
+    // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
+    const pdfExtract = require('pdf-text-extract');
 
-    console.log('[PDF-PARSER] Parsing PDF buffer...');
-    const doc = new pdfjsLib.Document(buffer);
+    return new Promise((resolve, reject) => {
+      // pdf-text-extract requires a file path, so we use a callback approach
+      pdfExtract(buffer, { type: 'buffer' }, (err: any, pages: any) => {
+        if (err) {
+          console.error('[PDF-PARSER] Extraction error:', err);
+          reject(new Error(`PDF extraction failed: ${err.message}`));
+          return;
+        }
 
-    let fullText = '';
-    console.log(`[PDF-PARSER] Document has ${doc.numPages} pages`);
+        if (!pages || !Array.isArray(pages)) {
+          console.error('[PDF-PARSER] No pages extracted');
+          reject(new Error('No text pages extracted from PDF'));
+          return;
+        }
 
-    for (let pageNum = 1; pageNum <= doc.numPages; pageNum++) {
-      try {
-        const page = doc.getPage(pageNum);
-        const pageText = page.getTextContent();
-        fullText += pageText + '\n';
-      } catch (pageError) {
-        console.warn(`[PDF-PARSER] ⚠️ Warning extracting page ${pageNum}:`, pageError instanceof Error ? pageError.message : 'Unknown error');
-      }
-    }
-
-    console.log(`[PDF-PARSER] ✅ Extracted ${fullText.length} characters from ${doc.numPages} pages`);
-    return fullText.trim();
+        const fullText = pages.join('\n');
+        console.log(`[PDF-PARSER] ✅ Extracted ${fullText.length} characters from ${pages.length} pages`);
+        resolve(fullText.trim());
+      });
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'PDF parsing failed';
     throw new Error(`PDF extraction error: ${message}`);
