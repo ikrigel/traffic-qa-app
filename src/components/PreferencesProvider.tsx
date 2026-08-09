@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useLayoutEffect, startTransition } from 'react';
 import { PreferencesContext, UserPreferences } from '@/lib/PreferencesContext';
 
 interface PreferencesProviderProps {
@@ -19,8 +19,8 @@ export default function PreferencesProvider({ children }: PreferencesProviderPro
 
       if (response.ok) {
         const data = await response.json();
-        setPreferences(data);
         applyPreferencesToDOM(data);
+        setPreferences(data);
       }
     } catch (err) {
       console.error('Failed to load preferences:', err);
@@ -41,8 +41,17 @@ export default function PreferencesProvider({ children }: PreferencesProviderPro
       if (!response.ok) throw new Error('Failed to update preferences');
 
       const data = await response.json();
-      setPreferences(data.preferences);
+
+      // CRITICAL: Apply DOM changes IMMEDIATELY before React re-render
+      // This ensures dark mode, language, etc. apply without visual flicker
       applyPreferencesToDOM(data.preferences);
+
+      // Defer React state update so it doesn't block the DOM change
+      // This maintains SPA pattern: UI updates immediately, state follows
+      startTransition(() => {
+        setPreferences(data.preferences);
+      });
+
       return true;
     } catch (err) {
       console.error('Failed to update preferences:', err);
@@ -54,7 +63,7 @@ export default function PreferencesProvider({ children }: PreferencesProviderPro
     fetchPreferences();
   }, [fetchPreferences]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (preferences) {
       applyPreferencesToDOM(preferences);
     }
