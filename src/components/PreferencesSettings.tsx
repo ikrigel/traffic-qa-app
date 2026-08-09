@@ -1,80 +1,27 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-
-interface UserPreferences {
-  user_id: string;
-  theme: 'light' | 'dark' | 'auto';
-  language: 'he' | 'en';
-  show_answers: boolean;
-  notification_email: boolean;
-  show_onboarding: boolean;
-  compact_mode: boolean;
-  high_contrast: boolean;
-  created_at: string;
-  updated_at: string;
-}
+import { useState } from 'react';
+import { usePreferences } from '@/hooks/usePreferences';
 
 export default function PreferencesSettings() {
-  const [preferences, setPreferences] = useState<UserPreferences | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { preferences, loading, updatePreferences } = usePreferences();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchPreferences();
-  }, []);
-
-  const fetchPreferences = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('/api/user/preferences', {
-        credentials: 'include',
-      });
-
-      if (!response.ok) throw new Error('Failed to load preferences');
-
-      const data = await response.json();
-      setPreferences(data);
-      setError(null);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to load preferences';
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSave = async (updates: Partial<UserPreferences>) => {
+  const handleSave = async (updates: Record<string, any>) => {
     try {
       setSaving(true);
       setError(null);
 
-      const response = await fetch('/api/user/preferences', {
-        method: 'PUT',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error?.message ?? 'Failed to save preferences');
+      const success = await updatePreferences(updates);
+      if (success) {
+        setSuccess('✅ Preferences saved!');
+        setTimeout(() => setSuccess(null), 2000);
+      } else {
+        setError('Failed to save preferences');
+        setTimeout(() => setError(null), 3000);
       }
-
-      // Update local state immediately with the new values
-      if (preferences) {
-        setPreferences({
-          ...preferences,
-          ...updates,
-          updated_at: new Date().toISOString(),
-        });
-      }
-
-      setSuccess('✅ Preferences saved!');
-
-      setTimeout(() => setSuccess(null), 2000);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to save preferences';
       setError(message);
@@ -92,10 +39,8 @@ export default function PreferencesSettings() {
     handleSave({ language });
   };
 
-  const handleToggle = (key: keyof UserPreferences, value: boolean) => {
-    const updates = { [key]: value };
-    setPreferences(prev => prev ? { ...prev, [key]: value } : null);
-    handleSave(updates);
+  const handleToggle = (key: string, value: boolean) => {
+    handleSave({ [key]: value });
   };
 
   if (loading) {
