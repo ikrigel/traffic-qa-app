@@ -92,6 +92,15 @@ export default function Home() {
                 ⚙️
               </button>
             )}
+            {user && (
+              <a
+                href="/tutor"
+                className="px-2 sm:px-3 py-2 text-xs sm:text-sm bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 font-semibold whitespace-nowrap transition"
+                title="Tutor"
+              >
+                🤖
+              </a>
+            )}
             {user && user.role !== 'user' && (
               <a
                 href="/admin"

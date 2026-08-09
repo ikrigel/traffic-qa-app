@@ -22,12 +22,6 @@ export default function UserSettings() {
     { id: 'huggingface', name: '🤗 HuggingFace', free: true, speed: '⭐⭐' },
   ];
 
-  // Load API keys on mount
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    fetchApiKeys();
-  }, []);
-
   const fetchApiKeys = useCallback(async () => {
     try {
       const response = await fetch('/api/user/keys', {
@@ -45,6 +39,11 @@ export default function UserSettings() {
       setLoading(false);
     }
   }, []);
+
+  // Load API keys on mount
+  useEffect(() => {
+    fetchApiKeys();
+  }, [fetchApiKeys]);
 
   const handleAddKey = async (e: React.FormEvent) => {
     e.preventDefault();

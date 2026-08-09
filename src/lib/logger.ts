@@ -49,9 +49,11 @@ export const appLog = async ({
 }: LogInput): Promise<void> => {
   const timestamp = new Date().toISOString();
   const prefix = `[${timestamp}] [${level.toUpperCase()}] [${source}]`;
+  // eslint-disable-next-line no-console
   console.log(`${prefix} ${message}`, context ? context : '');
 
   logQueue.push({ source, message, context, level });
+  // eslint-disable-next-line no-console
   processLogQueue().catch(err => console.error('[LOGGER] Queue processing failed:', err));
 };
 

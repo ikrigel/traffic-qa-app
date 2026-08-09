@@ -7,6 +7,7 @@ export type ApiErrorCode =
   | 'KEY_NOT_FOUND'
   | 'UNAUTHORIZED_KEY_ACCESS'
   | 'MISSING_FIELDS'
+  | 'INVALID_REQUEST'
   | 'NO_API_KEY'
   | 'ALL_KEYS_FAILED'
   | 'VALIDATION_FAILED'

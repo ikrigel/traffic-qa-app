@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
 
     // Test user_preferences table
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('user_preferences')
         .select('count(*)', { count: 'exact' })
         .limit(1);
@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
 
     // Test user_progress table
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('user_progress')
         .select('count(*)', { count: 'exact' })
         .limit(1);
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
 
     // Test user_statistics table
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('user_statistics')
         .select('count(*)', { count: 'exact' })
         .limit(1);
