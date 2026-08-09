@@ -20,44 +20,102 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
   const [result, setResult] = useState<TestResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
   const recognitionRef = useRef<any>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [inputMethod, setInputMethod] = useState<'typed' | 'voice'>('typed');
   const [voiceSupported, setVoiceSupported] = useState(false);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // Check for Speech Recognition API support
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    setVoiceSupported(!!SpeechRecognition);
+    const supported = !!SpeechRecognition;
+    setVoiceSupported(supported);
+
+    console.log('[VOICE] Speech Recognition API:', supported ? '✅ Supported' : '❌ Not supported');
+    console.log('[VOICE] Browser:', navigator.userAgent);
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
   }, []);
 
   const startListening = () => {
+    setVoiceError(null);
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert('Speech recognition is not supported on your device or browser');
+      setVoiceError('Speech recognition not supported');
+      console.error('[VOICE] Speech Recognition not available');
       return;
     }
 
     try {
+      console.log('[VOICE] Starting speech recognition...');
       recognitionRef.current = new SpeechRecognition();
       recognitionRef.current.lang = 'he-IL';
       recognitionRef.current.continuous = false;
       recognitionRef.current.interimResults = true;
+      recognitionRef.current.maxAlternatives = 1;
 
-      recognitionRef.current.onstart = () => setIsListening(true);
-      recognitionRef.current.onend = () => setIsListening(false);
-      recognitionRef.current.onerror = (event: any) => {
-        console.error('Speech recognition error:', event.error);
-        setIsListening(false);
+      recognitionRef.current.onstart = () => {
+        console.log('[VOICE] 🎤 Listening started');
+        setIsListening(true);
+        setVoiceError(null);
+
+        // Set timeout to auto-stop after 30 seconds
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        timeoutRef.current = setTimeout(() => {
+          console.log('[VOICE] ⏱️ Timeout - stopping listening');
+          stopListening();
+        }, 30000);
       };
+
+      recognitionRef.current.onend = () => {
+        console.log('[VOICE] 🎤 Listening ended');
+        setIsListening(false);
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      };
+
+      recognitionRef.current.onerror = (event: any) => {
+        console.error('[VOICE] ❌ Error:', event.error);
+        setIsListening(false);
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
+        // Provide specific error messages
+        const errorMessages: Record<string, string> = {
+          'no-speech': '🔇 No speech detected. Please try again.',
+          'audio-capture': '🎤 Microphone not found or permission denied.',
+          'network': '🌐 Network error. Check your connection.',
+          'permission-denied': '🔒 Microphone permission denied. Check browser settings.',
+          'not-allowed': '🔒 Microphone access not allowed.',
+          'service-not-allowed': '🚫 Voice input is not available in this context.',
+        };
+
+        const errorMsg = errorMessages[event.error] || `Voice input error: ${event.error}`;
+        setVoiceError(errorMsg);
+        console.error('[VOICE] Error message:', errorMsg);
+      };
+
       recognitionRef.current.onresult = (event: any) => {
         let interimTranscript = '';
         let finalTranscript = '';
 
+        console.log('[VOICE] 📝 Processing results, count:', event.results.length);
+
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const transcript = event.results[i][0].transcript;
+          const confidence = event.results[i][0].confidence;
+
           if (event.results[i].isFinal) {
             finalTranscript += transcript + ' ';
+            console.log('[VOICE] ✅ Final:', transcript, `(${(confidence * 100).toFixed(0)}%)`);
           } else {
             interimTranscript += transcript;
+            console.log('[VOICE] 💬 Interim:', transcript);
           }
         }
 
@@ -65,19 +123,29 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
         if (fullTranscript.trim()) {
           setAnswer(prev => (prev ? prev + ' ' + fullTranscript.trim() : fullTranscript.trim()));
           setInputMethod('voice');
+          console.log('[VOICE] 📤 Updated answer');
         }
       };
+
+      console.log('[VOICE] 🚀 Starting recognition...');
       recognitionRef.current.start();
     } catch (error) {
-      console.error('Failed to start speech recognition:', error);
-      alert('Failed to start voice input. Please try again.');
+      console.error('[VOICE] ❌ Failed to start:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Failed to start voice input';
+      setVoiceError(errorMsg);
     }
   };
 
   const stopListening = () => {
     if (recognitionRef.current) {
-      recognitionRef.current.stop();
+      console.log('[VOICE] ⏹️ Stopping...');
+      try {
+        recognitionRef.current.stop();
+      } catch (error) {
+        console.error('[VOICE] Error stopping:', error);
+      }
       setIsListening(false);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     }
   };
 
@@ -160,6 +228,12 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
             data-testid="answer-textarea"
           />
 
+          {voiceError && (
+            <div className="p-3 bg-red-100 border border-red-300 rounded-lg text-red-700 text-sm">
+              {voiceError}
+            </div>
+          )}
+
           <div className="flex gap-2">
             <button
               onClick={handleSubmit}
@@ -172,11 +246,13 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
             {voiceSupported && (
               <button
                 onClick={isListening ? stopListening : startListening}
+                disabled={loading}
                 className={`px-4 py-2 rounded-lg font-semibold transition ${
                   isListening
-                    ? 'bg-red-600 text-white hover:bg-red-700'
+                    ? 'bg-red-600 text-white hover:bg-red-700 animate-pulse'
                     : 'bg-blue-600 text-white hover:bg-blue-700'
-                }`}
+                } disabled:opacity-50`}
+                title={voiceError || (isListening ? 'Stop listening' : 'Click to start voice input (Hebrew)')}
               >
                 {isListening ? '⏹️ Stop' : '🎤 Voice'}
               </button>
