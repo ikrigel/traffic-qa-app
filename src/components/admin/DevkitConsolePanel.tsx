@@ -35,12 +35,18 @@ export default function DevkitConsolePanel() {
       const response = await fetch('/api/admin/logs?limit=50', {
         credentials: 'include',
       });
-      if (response.ok) {
-        const data = await response.json();
-        setServerLogs(data.logs || []);
+
+      if (!response.ok) {
+        console.error(`[DevKit] Logs fetch failed with status ${response.status}`);
+        setServerLogs([]);
+        return;
       }
+
+      const data = await response.json();
+      setServerLogs(data.logs || []);
     } catch (err) {
       console.error('[DevKit] Failed to fetch server logs:', err);
+      setServerLogs([]);
     } finally {
       setLoading(false);
     }

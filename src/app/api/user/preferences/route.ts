@@ -16,33 +16,71 @@ export async function GET(request: NextRequest) {
     await appLog({ source: 'user/preferences', message: `📋 Fetching preferences for user ${user.id}` });
 
     const supabase = getServiceSupabase();
-    const { data, error } = await supabase
-      .from('user_preferences')
-      .select('*')
-      .eq('user_id', user.id)
-      .single();
 
-    if (error && error.code !== 'PGRST116') {
-      throw error;
+    // Try to fetch existing preferences
+    let data = null;
+    let error: any = null;
+    try {
+      const result = await supabase
+        .from('user_preferences')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      data = result.data;
+      error = result.error;
+    } catch (err) {
+      console.error('[PREFS] Query error:', err);
+      error = err;
     }
 
-    const preferences = data || {
-      user_id: user.id,
-      theme: 'auto',
-      language: 'he',
-      show_answers: false,
-      notification_email: true,
-      show_onboarding: true,
-      compact_mode: false,
-      high_contrast: false,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
+    // If no record exists (PGRST116) or any other error, return defaults
+    if (!data) {
+      const errorCode = error?.code || (error instanceof Error ? error.message : 'unknown');
+      await appLog({
+        source: 'user/preferences',
+        message: `📝 No preferences found, returning defaults`,
+        context: { userId: user.id, errorCode }
+      });
 
-    return NextResponse.json(preferences);
+      const defaultPrefs = {
+        user_id: user.id,
+        theme: 'auto' as const,
+        language: 'he' as const,
+        show_answers: false,
+        notification_email: true,
+        show_onboarding: true,
+        compact_mode: false,
+        high_contrast: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      return NextResponse.json(defaultPrefs);
+    }
+
+    return NextResponse.json(data);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to fetch preferences';
     await logError({ source: 'user/preferences', message: `❌ GET error: ${message}`, level: 'error' });
+
+    // Return defaults on error to prevent modal crash
+    const user = await getSessionUser(request);
+    if (user) {
+      return NextResponse.json({
+        user_id: user.id,
+        theme: 'auto',
+        language: 'he',
+        show_answers: false,
+        notification_email: true,
+        show_onboarding: true,
+        compact_mode: false,
+        high_contrast: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+    }
+
     return apiError('INTERNAL_ERROR', message, 500);
   }
 }
