@@ -15,10 +15,10 @@ export interface ChunkedDocument {
   parentTitle: string;
 }
 
-const MAX_CHUNK_SIZE = 400000; // 400KB per chunk (safer for embeddings)
-const MIN_CHUNK_SIZE = 50000; // Minimum size to avoid tiny chunks
+const MAX_CHUNK_SIZE = 100000; // 100KB per chunk (safe for embeddings and upload)
+const MIN_CHUNK_SIZE = 20000; // Minimum size to avoid tiny chunks
 const OVERLAP_RATIO = 0.1; // 10% overlap between chunks for context
-const IDEAL_CHUNK_SIZE = 300000; // Target size for good embedding quality
+const IDEAL_CHUNK_SIZE = 80000; // Target size for good embedding quality
 
 /**
  * Find natural breaking points in text (paragraphs, double newlines)

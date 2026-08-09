@@ -11,7 +11,7 @@ import { chunkDocument, formatChunkInfo } from '@/lib/pdfChunker';
 export const dynamic = 'force-dynamic';
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB per file
-const MAX_CONTENT_LENGTH = 500000; // 500,000 characters max content after parsing
+const MAX_CONTENT_LENGTH = 150000; // 150KB chars per chunk (triggers auto-chunking earlier)
 
 export async function POST(request: NextRequest) {
   try {
