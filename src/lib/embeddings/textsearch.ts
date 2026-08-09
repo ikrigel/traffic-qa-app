@@ -13,8 +13,8 @@ export const textSearchEmbed = async (text: string): Promise<EmbeddingResult> =>
 
     console.log('[TEXT-SEARCH] 📝 Extracted', uniqueWords.size, 'unique keywords');
 
-    // Create a 384-dimensional embedding using keyword frequency analysis
-    // Each dimension represents a common traffic-related keyword
+    // Create a 768-dimensional embedding using keyword frequency analysis
+    // First 200 dimensions: common traffic-related keywords
     const trafficKeywords = [
       'speed', 'limit', 'drive', 'road', 'car', 'vehicle', 'traffic', 'sign',
       'light', 'turn', 'lane', 'stop', 'yield', 'overtake', 'safe', 'accident',
@@ -28,6 +28,16 @@ export const textSearchEmbed = async (text: string): Promise<EmbeddingResult> =>
       'highway', 'street', 'alley', 'bridge', 'tunnel', 'curve', 'hill',
       'slope', 'grade', 'intersection', 'roundabout', 'crosswalk', 'median',
       'shoulder', 'sidewalk', 'curb', 'ditch', 'barrier', 'guardrail',
+      'red', 'green', 'yellow', 'white', 'black', 'blue', 'line', 'marking',
+      'center', 'edge', 'surface', 'asphalt', 'concrete', 'gravel', 'dirt',
+      'wet', 'dry', 'slippery', 'icy', 'muddy', 'dusty', 'clean', 'dirty',
+      'clear', 'cloudy', 'sunny', 'shady', 'bright', 'dim', 'flashing', 'solid',
+      'steady', 'blinking', 'off', 'on', 'working', 'broken', 'damaged', 'intact',
+      'full', 'empty', 'heavy', 'light', 'fast', 'slow', 'quick', 'steady',
+      'smooth', 'rough', 'straight', 'curved', 'steep', 'flat', 'narrow', 'wide',
+      'short', 'long', 'near', 'far', 'close', 'distant', 'next', 'behind',
+      'ahead', 'left', 'right', 'center', 'middle', 'front', 'back', 'side',
+      'top', 'bottom', 'above', 'below', 'inside', 'outside', 'uphill', 'downhill',
     ];
 
     // Create embedding: normalize keyword presence
@@ -35,16 +45,22 @@ export const textSearchEmbed = async (text: string): Promise<EmbeddingResult> =>
       return uniqueWords.has(keyword) ? 1.0 : 0.0;
     });
 
-    // Pad to 384 dimensions
-    while (embedding.length < 384) {
-      embedding.push(0);
+    // Pad to 768 dimensions with varying values based on text stats
+    const textLength = text.length;
+    const uniqueWordCount = uniqueWords.size;
+    const wordDensity = uniqueWordCount / (textLength / 10 || 1);
+
+    while (embedding.length < 768) {
+      // Add supplementary dimensions based on text characteristics
+      const supplementaryValue = (wordDensity / 100) % 1.0;
+      embedding.push(supplementaryValue);
     }
 
-    console.log('[TEXT-SEARCH] ✅ Text embedding created (384 dimensions)');
+    console.log('[TEXT-SEARCH] ✅ Text embedding created (768 dimensions)');
 
     return {
-      embedding: embedding.slice(0, 384),
-      dimensions: 384,
+      embedding: embedding.slice(0, 768),
+      dimensions: 768,
       provider: 'textsearch',
       model: 'keyword-frequency',
     };
