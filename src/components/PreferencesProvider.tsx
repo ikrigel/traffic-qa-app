@@ -123,6 +123,8 @@ function applyPreferencesToDOM(prefs: UserPreferences) {
     html.classList.remove('high-contrast');
   }
 
-  // Store preferences in sessionStorage for quick access
-  sessionStorage.setItem('userPreferences', JSON.stringify(prefs));
+  // Store preferences in localStorage for persistence and immediate loading
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('userPreferences', JSON.stringify(prefs));
+  }
 }
