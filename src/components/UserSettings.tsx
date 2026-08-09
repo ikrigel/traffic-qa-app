@@ -23,6 +23,7 @@ export default function UserSettings() {
   ];
 
   // Load API keys on mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchApiKeys();
   }, []);

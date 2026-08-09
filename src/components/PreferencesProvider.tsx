@@ -58,7 +58,7 @@ export default function PreferencesProvider({ children }: PreferencesProviderPro
     if (preferences) {
       applyPreferencesToDOM(preferences);
     }
-  }, [preferences?.theme, preferences?.compact_mode, preferences?.high_contrast]);
+  }, [preferences]);
 
   return (
     <PreferencesContext.Provider

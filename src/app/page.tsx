@@ -9,6 +9,7 @@ import HelpModal from '@/components/HelpModal';
 import AboutModal from '@/components/AboutModal';
 import SettingsModal from '@/components/SettingsModal';
 import ChatAssistant from '@/components/ChatAssistant';
+import ProgressCard from '@/components/ProgressCard';
 import { COURSES, getCourseQuestions } from '@/lib/questions';
 import { downloadPDF } from '@/lib/pdfGenerator';
 
@@ -146,20 +147,7 @@ export default function Home() {
               </div>
 
               {/* Quick Stats */}
-              <div className="grid grid-cols-3 gap-2 sm:gap-4">
-                <div className="bg-blue-50 rounded-lg p-3 sm:p-4 text-center border border-blue-200">
-                  <div className="text-xl sm:text-2xl font-bold text-blue-600">0</div>
-                  <div className="text-xs sm:text-sm text-gray-600">שאלות</div>
-                </div>
-                <div className="bg-green-50 rounded-lg p-3 sm:p-4 text-center border border-green-200">
-                  <div className="text-xl sm:text-2xl font-bold text-green-600">0%</div>
-                  <div className="text-xs sm:text-sm text-gray-600">התקדמות</div>
-                </div>
-                <div className="bg-purple-50 rounded-lg p-3 sm:p-4 text-center border border-purple-200">
-                  <div className="text-xl sm:text-2xl font-bold text-purple-600">0</div>
-                  <div className="text-xs sm:text-sm text-gray-600">נכונות</div>
-                </div>
-              </div>
+              <ProgressCard />
 
               {/* Courses Section */}
               <div className="mt-8">
