@@ -6,6 +6,7 @@ import { embedWithFallback } from '@/lib/embeddings';
 import { apiError } from '@/lib/apiErrors';
 import { parseDocument } from '@/lib/documentParser';
 import { appLog, logError } from '@/lib/logger';
+import { chunkDocument, formatChunkInfo } from '@/lib/pdfChunker';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,90 +66,116 @@ export async function POST(request: NextRequest) {
         console.log(`[RAG-UPLOAD] 📄 Content length: ${parsed.content.length} characters`);
         console.log(`[RAG-UPLOAD] 🎯 File type detected: ${parsed.fileType}`);
 
-        // Validate content length
-        if (parsed.content.length > MAX_CONTENT_LENGTH) {
-          const sizeMB = (parsed.content.length / 1000000).toFixed(2);
-          console.warn(`[RAG-UPLOAD] Content too large: ${sizeMB}MB (max 500KB text)`);
-          const suggestion = parsed.pageCount && parsed.pageCount > 100
-            ? ` (PDF has ${parsed.pageCount} pages - try splitting into smaller files)`
-            : '';
-          results.push({
-            filename: file.name,
-            success: false,
-            error: `Content too large: ${sizeMB}MB extracted (max 500KB)${suggestion}`,
-          });
-          continue;
-        }
-
-        // Generate embedding with fallback chain
-        console.log(`[RAG-UPLOAD] 🧮 Generating embedding...`);
-        let embeddingResult: any = null;
-        let embedProvider: string | null = null;
-
-        try {
-          await appLog({ source: 'rag-upload', message: `🧮 Starting embedding for "${parsed.title}"`, context: { textLength: parsed.content.length } });
-          embeddingResult = await embedWithFallback(parsed.content);
-          if (embeddingResult) {
-            embedProvider = embeddingResult.provider;
-            console.log(`[RAG-UPLOAD] ✅ Embedding generated via ${embedProvider} (${embeddingResult.dimensions} dimensions)`);
-            await appLog({ source: 'rag-upload', message: `✅ Embedding successful via ${embedProvider}`, context: { dimensions: embeddingResult.dimensions } });
-          } else {
-            console.warn(`[RAG-UPLOAD] ⚠️ No embedding providers available, continuing without embedding`);
-            await logError({ source: 'rag-upload', message: `⚠️ All embedding providers failed, continuing without embeddings`, level: 'warn' });
-          }
-        } catch (embedError) {
-          const embedMsg = embedError instanceof Error ? embedError.message : String(embedError);
-          console.error(`[RAG-UPLOAD] ❌ Embedding error: ${embedMsg}`);
-          await logError({ source: 'rag-upload', message: `❌ Embedding error: ${embedMsg}`, level: 'error' });
-          console.warn(`[RAG-UPLOAD] ⚠️ Continuing without embedding (RAG search may not work optimally)`);
-        }
-
-        const embedding = embeddingResult?.embedding || null;
-
-        // Insert into database
-        console.log(`[RAG-UPLOAD] 💾 Inserting into Supabase...`);
-        console.log(`[RAG-UPLOAD] 📊 Embedding status: ${embedding ? `Ready (${embedding.length}D)` : 'Skipped - will be added later'}`);
-
-        const { data, error } = await supabase
-          .from('rag_documents')
-          .insert({
+        // Check if content needs chunking
+        const documentsToProcess = parsed.content.length > MAX_CONTENT_LENGTH
+          ? chunkDocument(parsed.content, parsed.title, source || `Uploaded: ${file.name}`, parsed.pageCount || 0)
+          : [{
             title: parsed.title,
-            source: source || `Uploaded: ${file.name}`,
             content: parsed.content,
-            embedding: embedding || null,
-            metadata: {
-              uploadedFile: file.name,
-              fileType: parsed.fileType,
-              fileSize: file.size,
-              uploadedAt: new Date().toISOString(),
-              embeddingStatus: embedding ? 'complete' : 'pending',
-              embeddingProvider: embedProvider || 'none',
-            },
-            created_by: user.id,
-          })
-          .select()
-          .single();
+            chunkIndex: 0,
+            totalChunks: 1,
+            pageStart: 1,
+            pageEnd: parsed.pageCount || 0,
+            source: source || `Uploaded: ${file.name}`,
+            isChunk: false,
+            parentTitle: parsed.title,
+          }];
 
-        if (error) {
-          console.error(`[RAG-UPLOAD] ❌ DATABASE ERROR for "${file.name}":`);
-          console.error(`[RAG-UPLOAD] Error code: ${error.code}`);
-          console.error(`[RAG-UPLOAD] Error message: ${error.message}`);
-          console.error(`[RAG-UPLOAD] Error details:`, error);
-          results.push({
-            filename: file.name,
-            success: false,
-            error: error.message,
+        if (documentsToProcess.length > 1) {
+          console.log(`[RAG-UPLOAD] 📚 ${formatChunkInfo(documentsToProcess)}`);
+          await appLog({
+            source: 'rag-upload',
+            message: `📚 Large document auto-chunked into ${documentsToProcess.length} parts`,
+            context: { fileName: file.name, chunks: documentsToProcess.length, totalSize: parsed.content.length },
           });
-        } else {
-          console.log(`[RAG-UPLOAD] ✅ Successfully uploaded "${file.name}"`);
-          results.push({
-            filename: file.name,
-            success: true,
-            id: data.id,
-            title: parsed.title,
-            contentLength: parsed.content.length,
-            fileType: parsed.fileType,
-          });
+        }
+
+        // Process each document/chunk
+        for (const doc of documentsToProcess) {
+          try {
+            // Generate embedding with fallback chain
+            console.log(`[RAG-UPLOAD] 🧮 Generating embedding for "${doc.title}"...`);
+            let embeddingResult: any = null;
+            let embedProvider: string | null = null;
+
+            try {
+              await appLog({ source: 'rag-upload', message: `🧮 Embedding: "${doc.title}"`, context: { textLength: doc.content.length } });
+              embeddingResult = await embedWithFallback(doc.content);
+              if (embeddingResult) {
+                embedProvider = embeddingResult.provider;
+                console.log(`[RAG-UPLOAD] ✅ Embedding via ${embedProvider} (${embeddingResult.dimensions}D)`);
+                await appLog({ source: 'rag-upload', message: `✅ Embedded via ${embedProvider}`, context: { dimensions: embeddingResult.dimensions } });
+              } else {
+                console.warn(`[RAG-UPLOAD] ⚠️ No embedding providers available`);
+                await logError({ source: 'rag-upload', message: `⚠️ Embedding providers failed for "${doc.title}"`, level: 'warn' });
+              }
+            } catch (embedError) {
+              const embedMsg = embedError instanceof Error ? embedError.message : String(embedError);
+              console.error(`[RAG-UPLOAD] ❌ Embedding error: ${embedMsg}`);
+              await logError({ source: 'rag-upload', message: `❌ Embedding error for "${doc.title}": ${embedMsg}`, level: 'error' });
+            }
+
+            const embedding = embeddingResult?.embedding || null;
+
+            // Insert into database
+            console.log(`[RAG-UPLOAD] 💾 Inserting "${doc.title}"...`);
+
+            const { data, error } = await supabase
+              .from('rag_documents')
+              .insert({
+                title: doc.title,
+                source: doc.source,
+                content: doc.content,
+                embedding: embedding || null,
+                metadata: {
+                  uploadedFile: file.name,
+                  fileType: parsed.fileType,
+                  fileSize: file.size,
+                  uploadedAt: new Date().toISOString(),
+                  embeddingStatus: embedding ? 'complete' : 'pending',
+                  embeddingProvider: embedProvider || 'none',
+                  isChunk: doc.isChunk,
+                  chunkIndex: doc.chunkIndex,
+                  totalChunks: doc.totalChunks,
+                  parentTitle: doc.parentTitle,
+                  pageRange: `${doc.pageStart}-${doc.pageEnd}`,
+                },
+                created_by: user.id,
+              })
+              .select()
+              .single();
+
+            if (error) {
+              console.error(`[RAG-UPLOAD] ❌ DATABASE ERROR for "${doc.title}":`);
+              console.error(`[RAG-UPLOAD] Error code: ${error.code}`);
+              console.error(`[RAG-UPLOAD] Error message: ${error.message}`);
+              results.push({
+                filename: file.name,
+                success: false,
+                error: `${doc.title}: ${error.message}`,
+              });
+            } else {
+              console.log(`[RAG-UPLOAD] ✅ Uploaded "${doc.title}"`);
+              results.push({
+                filename: file.name,
+                success: true,
+                id: data.id,
+                title: doc.title,
+                contentLength: doc.content.length,
+                fileType: parsed.fileType,
+                isChunk: doc.isChunk,
+                chunkInfo: doc.isChunk ? `Part ${doc.chunkIndex + 1}/${doc.totalChunks}` : undefined,
+              });
+            }
+          } catch (chunkError) {
+            const message = chunkError instanceof Error ? chunkError.message : 'Unknown error';
+            console.error(`[RAG-UPLOAD] ❌ Error processing chunk:`, message);
+            results.push({
+              filename: file.name,
+              success: false,
+              error: `Chunk error: ${message}`,
+            });
+          }
         }
       } catch (docError) {
         const message = docError instanceof Error ? docError.message : 'Unknown error';
