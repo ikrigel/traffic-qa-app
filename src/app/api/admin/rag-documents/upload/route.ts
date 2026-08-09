@@ -10,6 +10,7 @@ import { appLog, logError } from '@/lib/logger';
 export const dynamic = 'force-dynamic';
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB per file
+const MAX_CONTENT_LENGTH = 500000; // 500,000 characters max content after parsing
 
 export async function POST(request: NextRequest) {
   try {
@@ -63,6 +64,18 @@ export async function POST(request: NextRequest) {
         console.log(`[RAG-UPLOAD] ✅ Document parsed: "${parsed.title}"`);
         console.log(`[RAG-UPLOAD] 📄 Content length: ${parsed.content.length} characters`);
         console.log(`[RAG-UPLOAD] 🎯 File type detected: ${parsed.fileType}`);
+
+        // Validate content length
+        if (parsed.content.length > MAX_CONTENT_LENGTH) {
+          const sizeMB = (parsed.content.length / 1000000).toFixed(2);
+          console.warn(`[RAG-UPLOAD] Content too large: ${sizeMB}MB (max 500KB text)`);
+          results.push({
+            filename: file.name,
+            success: false,
+            error: `Content too large: ${sizeMB}MB extracted (max 500KB of text content)`,
+          });
+          continue;
+        }
 
         // Generate embedding with fallback chain
         console.log(`[RAG-UPLOAD] 🧮 Generating embedding...`);

@@ -19,11 +19,24 @@ export default function PreferencesProvider({ children }: PreferencesProviderPro
 
       if (response.ok) {
         const data = await response.json();
+        // Immediately apply to DOM and localStorage
         applyPreferencesToDOM(data);
+        localStorage.setItem('userPreferences', JSON.stringify(data));
         setPreferences(data);
       }
     } catch (err) {
       console.error('Failed to load preferences:', err);
+      // Try to load from localStorage as fallback
+      const stored = localStorage.getItem('userPreferences');
+      if (stored) {
+        try {
+          const data = JSON.parse(stored);
+          applyPreferencesToDOM(data);
+          setPreferences(data);
+        } catch (e) {
+          console.error('Failed to parse stored preferences:', e);
+        }
+      }
     } finally {
       setLoading(false);
     }
@@ -45,6 +58,7 @@ export default function PreferencesProvider({ children }: PreferencesProviderPro
       // CRITICAL: Apply DOM changes IMMEDIATELY before React re-render
       // This ensures dark mode, language, etc. apply without visual flicker
       applyPreferencesToDOM(data.preferences);
+      localStorage.setItem('userPreferences', JSON.stringify(data.preferences));
 
       // Defer React state update so it doesn't block the DOM change
       // This maintains SPA pattern: UI updates immediately, state follows
@@ -66,6 +80,7 @@ export default function PreferencesProvider({ children }: PreferencesProviderPro
   useLayoutEffect(() => {
     if (preferences) {
       applyPreferencesToDOM(preferences);
+      localStorage.setItem('userPreferences', JSON.stringify(preferences));
     }
   }, [preferences]);
 
@@ -82,19 +97,20 @@ export default function PreferencesProvider({ children }: PreferencesProviderPro
   );
 }
 
-function applyPreferencesToDOM(prefs: UserPreferences) {
+export function applyPreferencesToDOM(prefs: UserPreferences) {
   if (typeof window === 'undefined') return;
 
   const html = document.documentElement;
 
-  // Apply theme
+  // Apply theme - ensure class is added/removed correctly
   if (prefs.theme === 'dark') {
     html.classList.add('dark');
   } else if (prefs.theme === 'light') {
     html.classList.remove('dark');
   } else {
     // Auto - respect system preference
-    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (prefersDark) {
       html.classList.add('dark');
     } else {
       html.classList.remove('dark');
@@ -121,10 +137,5 @@ function applyPreferencesToDOM(prefs: UserPreferences) {
     html.classList.add('high-contrast');
   } else {
     html.classList.remove('high-contrast');
-  }
-
-  // Store preferences in localStorage for persistence and immediate loading
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('userPreferences', JSON.stringify(prefs));
   }
 }
