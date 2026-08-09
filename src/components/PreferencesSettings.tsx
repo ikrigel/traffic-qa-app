@@ -63,14 +63,22 @@ export default function PreferencesSettings() {
         throw new Error(errorData.error?.message ?? 'Failed to save preferences');
       }
 
-      const data = await response.json();
-      setPreferences(data.preferences);
-      setSuccess('✅ Preferences saved successfully!');
+      // Update local state immediately with the new values
+      if (preferences) {
+        setPreferences({
+          ...preferences,
+          ...updates,
+          updated_at: new Date().toISOString(),
+        });
+      }
 
-      setTimeout(() => setSuccess(null), 3000);
+      setSuccess('✅ Preferences saved!');
+
+      setTimeout(() => setSuccess(null), 2000);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to save preferences';
       setError(message);
+      setTimeout(() => setError(null), 3000);
     } finally {
       setSaving(false);
     }
@@ -178,7 +186,7 @@ export default function PreferencesSettings() {
 
           {/* Compact Mode */}
           <div className="pt-4 border-t border-gray-200">
-            <label className="flex items-center gap-3 cursor-pointer">
+            <label className={`flex items-center gap-3 ${saving ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}>
               <input
                 type="checkbox"
                 checked={preferences.compact_mode}
@@ -193,7 +201,7 @@ export default function PreferencesSettings() {
 
           {/* High Contrast */}
           <div>
-            <label className="flex items-center gap-3 cursor-pointer">
+            <label className={`flex items-center gap-3 ${saving ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}>
               <input
                 type="checkbox"
                 checked={preferences.high_contrast}
@@ -215,7 +223,7 @@ export default function PreferencesSettings() {
         <div className="space-y-4">
           {/* Show Answers */}
           <div>
-            <label className="flex items-center gap-3 cursor-pointer">
+            <label className={`flex items-center gap-3 ${saving ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}>
               <input
                 type="checkbox"
                 checked={preferences.show_answers}
@@ -230,7 +238,7 @@ export default function PreferencesSettings() {
 
           {/* Show Onboarding */}
           <div>
-            <label className="flex items-center gap-3 cursor-pointer">
+            <label className={`flex items-center gap-3 ${saving ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}>
               <input
                 type="checkbox"
                 checked={preferences.show_onboarding}
@@ -252,7 +260,7 @@ export default function PreferencesSettings() {
         <div className="space-y-4">
           {/* Email Notifications */}
           <div>
-            <label className="flex items-center gap-3 cursor-pointer">
+            <label className={`flex items-center gap-3 ${saving ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}>
               <input
                 type="checkbox"
                 checked={preferences.notification_email}
