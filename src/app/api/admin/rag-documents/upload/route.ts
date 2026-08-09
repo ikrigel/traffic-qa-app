@@ -65,23 +65,33 @@ export async function POST(request: NextRequest) {
 
         // Generate embedding
         console.log(`[RAG-UPLOAD] 🧮 Generating embedding...`);
-        const embedding = await embedText(parsed.content);
-        console.log(`[RAG-UPLOAD] ✅ Embedding generated (${embedding.length} dimensions)`);
+        let embedding: number[] | null = null;
+        try {
+          embedding = await embedText(parsed.content);
+          console.log(`[RAG-UPLOAD] ✅ Embedding generated (${embedding.length} dimensions)`);
+        } catch (embedError) {
+          const embedMsg = embedError instanceof Error ? embedError.message : String(embedError);
+          console.warn(`[RAG-UPLOAD] ⚠️ Embedding failed: ${embedMsg}`);
+          console.warn(`[RAG-UPLOAD] ⚠️ Continuing without embedding (RAG search may not work optimally)`);
+        }
 
         // Insert into database
         console.log(`[RAG-UPLOAD] 💾 Inserting into Supabase...`);
+        console.log(`[RAG-UPLOAD] 📊 Embedding status: ${embedding ? `Ready (${embedding.length}D)` : 'Skipped - will be added later'}`);
+
         const { data, error } = await supabase
           .from('rag_documents')
           .insert({
             title: parsed.title,
             source: source || `Uploaded: ${file.name}`,
             content: parsed.content,
-            embedding,
+            embedding: embedding || null,
             metadata: {
               uploadedFile: file.name,
               fileType: parsed.fileType,
               fileSize: file.size,
               uploadedAt: new Date().toISOString(),
+              embeddingStatus: embedding ? 'complete' : 'pending',
             },
             created_by: user.id,
           })
