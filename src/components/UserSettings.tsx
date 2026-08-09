@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { AIProvider, APIKey } from '@/types';
 
 export default function UserSettings() {
@@ -12,6 +12,7 @@ export default function UserSettings() {
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [operatingKeyId, setOperatingKeyId] = useState<string | null>(null);
 
   const providers: { id: AIProvider; name: string; free: boolean; speed: string }[] = [
     { id: 'groq', name: '⚡ Groq (Fastest, Free)', free: true, speed: '⭐⭐⭐⭐⭐' },
@@ -26,9 +27,8 @@ export default function UserSettings() {
     fetchApiKeys();
   }, []);
 
-  const fetchApiKeys = async () => {
+  const fetchApiKeys = useCallback(async () => {
     try {
-      setLoading(true);
       const response = await fetch('/api/user/keys', {
         credentials: 'include',
       });
@@ -37,13 +37,13 @@ export default function UserSettings() {
 
       const data = await response.json();
       setApiKeys(data.keys || []);
+      setLoading(false);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load API keys';
       setError(message);
-    } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const handleAddKey = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,9 +76,11 @@ export default function UserSettings() {
       setSuccess('✅ API key added successfully!');
       setApiKeyInput('');
       setDisplayName('');
-      fetchApiKeys();
 
-      // Clear success message after 3 seconds
+      // Update local state immediately without full refetch
+      const data = await response.json();
+      setApiKeys(prev => [...prev, data.key || { provider: selectedProvider }]);
+
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to add API key';
@@ -92,6 +94,7 @@ export default function UserSettings() {
     if (!confirm('Are you sure you want to delete this API key?')) return;
 
     try {
+      setOperatingKeyId(keyId);
       const response = await fetch(`/api/user/keys/${keyId}`, {
         method: 'DELETE',
         credentials: 'include',
@@ -100,17 +103,21 @@ export default function UserSettings() {
       if (!response.ok) throw new Error('Failed to delete API key');
 
       setSuccess('✅ API key deleted');
-      fetchApiKeys();
+      // Update local state immediately
+      setApiKeys(prev => prev.filter(k => k.id !== keyId));
 
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to delete API key';
       setError(message);
+    } finally {
+      setOperatingKeyId(null);
     }
   };
 
   const handleSetDefault = async (keyId: string) => {
     try {
+      setOperatingKeyId(keyId);
       const response = await fetch(`/api/user/keys/${keyId}`, {
         method: 'PATCH',
         credentials: 'include',
@@ -119,18 +126,25 @@ export default function UserSettings() {
       if (!response.ok) throw new Error('Failed to set default key');
 
       setSuccess('✅ Default key updated');
-      fetchApiKeys();
+      // Update local state immediately
+      setApiKeys(prev => prev.map(k => ({
+        ...k,
+        isDefault: k.id === keyId
+      })));
 
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to set default key';
       setError(message);
+    } finally {
+      setOperatingKeyId(null);
     }
   };
 
   const handleTestKey = async (keyId: string) => {
     try {
       setError(null);
+      setOperatingKeyId(keyId);
       const response = await fetch(`/api/user/keys/${keyId}/test`, {
         method: 'POST',
         credentials: 'include',
@@ -143,17 +157,21 @@ export default function UserSettings() {
       }
 
       setSuccess('✅ Key is valid!');
-      fetchApiKeys();
+      // Update local state with validation status
+      setApiKeys(prev => prev.map(k => k.id === keyId ? { ...k, validationStatus: 'valid' } : k));
 
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to test key';
       setError(message);
+    } finally {
+      setOperatingKeyId(null);
     }
   };
 
   const handleSetPriority = async (keyId: string, priority: number) => {
     try {
+      setOperatingKeyId(keyId);
       const response = await fetch(`/api/user/keys/${keyId}`, {
         method: 'PATCH',
         credentials: 'include',
@@ -164,12 +182,15 @@ export default function UserSettings() {
       if (!response.ok) throw new Error('Failed to update priority');
 
       setSuccess('✅ Priority updated');
-      fetchApiKeys();
+      // Update local state immediately
+      setApiKeys(prev => prev.map(k => k.id === keyId ? { ...k, priority } : k));
 
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to update priority';
       setError(message);
+    } finally {
+      setOperatingKeyId(null);
     }
   };
 
@@ -422,23 +443,26 @@ export default function UserSettings() {
                 <div className="flex gap-2 flex-wrap mb-3">
                   <button
                     onClick={() => handleTestKey(key.id)}
-                    className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-sm hover:bg-blue-200 transition"
+                    disabled={operatingKeyId !== null}
+                    className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-sm hover:bg-blue-200 disabled:opacity-50 disabled:cursor-not-allowed transition"
                   >
-                    🧪 Test
+                    {operatingKeyId === key.id ? '⏳ Testing...' : '🧪 Test'}
                   </button>
                   {!key.isDefault && (
                     <button
                       onClick={() => handleSetDefault(key.id)}
-                      className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded text-sm hover:bg-indigo-200 transition"
+                      disabled={operatingKeyId !== null}
+                      className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded text-sm hover:bg-indigo-200 disabled:opacity-50 disabled:cursor-not-allowed transition"
                     >
-                      Set Default
+                      {operatingKeyId === key.id ? '⏳ Setting...' : 'Set Default'}
                     </button>
                   )}
                   <button
                     onClick={() => handleDeleteKey(key.id)}
-                    className="px-3 py-1 bg-red-100 text-red-700 rounded text-sm hover:bg-red-200 transition"
+                    disabled={operatingKeyId !== null}
+                    className="px-3 py-1 bg-red-100 text-red-700 rounded text-sm hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed transition"
                   >
-                    Delete
+                    {operatingKeyId === key.id ? '⏳ Deleting...' : 'Delete'}
                   </button>
                 </div>
 
@@ -450,7 +474,8 @@ export default function UserSettings() {
                     max="10"
                     value={key.priority || 5}
                     onChange={e => handleSetPriority(key.id, parseInt(e.target.value))}
-                    className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                    disabled={operatingKeyId !== null}
+                    className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                   <span className="text-xs text-gray-600 w-6 text-right">{key.priority || 5}</span>
                 </div>
