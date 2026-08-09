@@ -1,4 +1,4 @@
-export type EmbeddingProvider = 'claude' | 'gemini' | 'perplexity';
+export type EmbeddingProvider = 'claude' | 'gemini' | 'openai' | 'huggingface' | 'textsearch' | 'perplexity';
 
 export interface EmbeddingResult {
   embedding: number[];
