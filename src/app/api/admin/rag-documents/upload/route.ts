@@ -5,6 +5,7 @@ import { getServiceSupabase } from '@/lib/supabase';
 import { embedWithFallback } from '@/lib/embeddings';
 import { apiError } from '@/lib/apiErrors';
 import { parseDocument } from '@/lib/documentParser';
+import { appLog, logError } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,16 +70,20 @@ export async function POST(request: NextRequest) {
         let embedProvider: string | null = null;
 
         try {
+          await appLog({ source: 'rag-upload', message: `🧮 Starting embedding for "${parsed.title}"`, context: { textLength: parsed.content.length } });
           embeddingResult = await embedWithFallback(parsed.content);
           if (embeddingResult) {
             embedProvider = embeddingResult.provider;
             console.log(`[RAG-UPLOAD] ✅ Embedding generated via ${embedProvider} (${embeddingResult.dimensions} dimensions)`);
+            await appLog({ source: 'rag-upload', message: `✅ Embedding successful via ${embedProvider}`, context: { dimensions: embeddingResult.dimensions } });
           } else {
             console.warn(`[RAG-UPLOAD] ⚠️ No embedding providers available, continuing without embedding`);
+            await logError({ source: 'rag-upload', message: `⚠️ All embedding providers failed, continuing without embeddings`, level: 'warn' });
           }
         } catch (embedError) {
           const embedMsg = embedError instanceof Error ? embedError.message : String(embedError);
           console.error(`[RAG-UPLOAD] ❌ Embedding error: ${embedMsg}`);
+          await logError({ source: 'rag-upload', message: `❌ Embedding error: ${embedMsg}`, level: 'error' });
           console.warn(`[RAG-UPLOAD] ⚠️ Continuing without embedding (RAG search may not work optimally)`);
         }
 

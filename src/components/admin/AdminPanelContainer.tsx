@@ -4,7 +4,7 @@ import { useState } from 'react';
 import type { AuthUser } from '@/hooks/useAuth';
 import UserManagementPanel from './UserManagementPanel';
 import RagDocumentsPanel from './RagDocumentsPanel';
-import DebugLogsPanel from './DebugLogsPanel';
+import UnifiedLogsPanel from './UnifiedLogsPanel';
 import RagEvaluationPanel from './RagEvaluationPanel';
 import DevkitConsolePanel from './DevkitConsolePanel';
 
@@ -54,7 +54,7 @@ export default function AdminPanelContainer({ user }: Props) {
       <div className="bg-white rounded-lg shadow-sm p-6">
         {activeTab === 'users' && <UserManagementPanel />}
         {activeTab === 'rag-docs' && isSuperAdmin && <RagDocumentsPanel />}
-        {activeTab === 'logs' && <DebugLogsPanel />}
+        {activeTab === 'logs' && <UnifiedLogsPanel />}
         {activeTab === 'evaluations' && <RagEvaluationPanel />}
         {activeTab === 'devkit' && isSuperAdmin && <DevkitConsolePanel />}
       </div>
