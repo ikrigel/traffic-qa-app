@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { usePreferences } from '@/hooks/usePreferences';
 import QuestionList from '@/components/QuestionList';
 import CourseSelector from '@/components/CourseSelector';
 import HelpModal from '@/components/HelpModal';
@@ -13,6 +14,7 @@ import { downloadPDF } from '@/lib/pdfGenerator';
 
 export default function Home() {
   const { user, loading, login, logout } = useAuth();
+  const { preferences } = usePreferences();
   const [selectedCourseId, setSelectedCourseId] = useState('traffic-laws');
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
@@ -175,7 +177,7 @@ export default function Home() {
                     </h3>
                     <QuestionList
                       questions={courseQuestions}
-                      showAnswers={false}
+                      showAnswers={preferences?.show_answers ?? false}
                       enableTesting={!!user}
                     />
                   </div>

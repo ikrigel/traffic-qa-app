@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import '../styles/globals.css';
+import PreferencesProvider from '@/components/PreferencesProvider';
 
 export const metadata: Metadata = {
   title: 'Traffic Laws Q&A',
@@ -19,7 +20,9 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/favicon.svg" />
         <meta name="theme-color" content="#0ea5e9" />
       </head>
-      <body className="bg-gray-50">{children}</body>
+      <body className="bg-gray-50">
+        <PreferencesProvider>{children}</PreferencesProvider>
+      </body>
     </html>
   );
 }

@@ -57,3 +57,60 @@ html[dir="rtl"] textarea {
   text-align: right;
   direction: rtl;
 }
+
+/* Compact Mode - Reduce spacing */
+html.compact-mode {
+  --spacing-multiplier: 0.75;
+}
+
+html.compact-mode * {
+  @apply leading-tight;
+}
+
+html.compact-mode p,
+html.compact-mode li {
+  @apply text-sm;
+}
+
+html.compact-mode button,
+html.compact-mode input,
+html.compact-mode select,
+html.compact-mode textarea {
+  @apply py-1.5 px-2 text-sm;
+}
+
+/* High Contrast Mode - Increase contrast and borders */
+html.high-contrast {
+  --text-opacity: 1;
+}
+
+html.high-contrast * {
+  @apply border-2;
+}
+
+html.high-contrast body {
+  @apply bg-white text-black;
+}
+
+html.high-contrast button {
+  @apply font-bold;
+}
+
+html.high-contrast button:not(.bg-white) {
+  @apply border-black;
+}
+
+html.high-contrast a {
+  @apply underline font-semibold;
+}
+
+html.high-contrast input,
+html.high-contrast textarea,
+html.high-contrast select {
+  @apply border-2 border-black;
+}
+
+/* Dark mode for high contrast */
+html.dark.high-contrast body {
+  @apply bg-black text-white;
+}
