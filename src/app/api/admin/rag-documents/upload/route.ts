@@ -69,10 +69,13 @@ export async function POST(request: NextRequest) {
         if (parsed.content.length > MAX_CONTENT_LENGTH) {
           const sizeMB = (parsed.content.length / 1000000).toFixed(2);
           console.warn(`[RAG-UPLOAD] Content too large: ${sizeMB}MB (max 500KB text)`);
+          const suggestion = parsed.pageCount && parsed.pageCount > 100
+            ? ` (PDF has ${parsed.pageCount} pages - try splitting into smaller files)`
+            : '';
           results.push({
             filename: file.name,
             success: false,
-            error: `Content too large: ${sizeMB}MB extracted (max 500KB of text content)`,
+            error: `Content too large: ${sizeMB}MB extracted (max 500KB)${suggestion}`,
           });
           continue;
         }

@@ -58,7 +58,7 @@ export function getSupportedFileType(filename: string): SupportedFileType | null
   return null;
 }
 
-async function parsePDF(buffer: Buffer): Promise<string> {
+async function parsePDF(buffer: Buffer): Promise<{ content: string; pageCount: number }> {
   console.log('[PDF-PARSER] 🔍 Starting PDF text extraction...');
   console.log(`[PDF-PARSER] 📊 Buffer size: ${buffer.length} bytes`);
 
@@ -94,7 +94,8 @@ async function parsePDF(buffer: Buffer): Promise<string> {
             return;
           }
 
-          console.log(`[PDF-PARSER] 📑 Processing ${data.Pages.length} pages...`);
+          const pageCount = data.Pages.length;
+          console.log(`[PDF-PARSER] 📑 Processing ${pageCount} pages...`);
 
           // Extract text from all pages
           let fullText = '';
@@ -125,13 +126,13 @@ async function parsePDF(buffer: Buffer): Promise<string> {
           }
 
           console.log(`[PDF-PARSER] ✅ Text extraction complete`);
-          console.log(`[PDF-PARSER] 📈 Extracted ${fullText.length} characters from ${data.Pages.length} pages`);
+          console.log(`[PDF-PARSER] 📈 Extracted ${fullText.length} characters from ${pageCount} pages`);
 
           if (fullText.trim().length === 0) {
             console.warn('[PDF-PARSER] ⚠️ Warning: Extracted text is empty');
           }
 
-          resolve(fullText.trim());
+          resolve({ content: fullText.trim(), pageCount });
         } catch (parseError) {
           console.error('[PDF-PARSER] ❌ ERROR IN DATA PROCESSING:');
           const message = parseError instanceof Error ? parseError.message : String(parseError);
@@ -155,7 +156,7 @@ async function parsePDF(buffer: Buffer): Promise<string> {
   }
 }
 
-export async function parseDocument(buffer: Buffer, filename: string): Promise<ParsedDocument> {
+export async function parseDocument(buffer: Buffer, filename: string): Promise<ParsedDocument & { pageCount?: number }> {
   const fileType = getSupportedFileType(filename);
 
   if (!fileType) {
@@ -165,12 +166,21 @@ export async function parseDocument(buffer: Buffer, filename: string): Promise<P
   console.log(`[PARSER] Parsing ${fileType.toUpperCase()}: ${filename}`);
 
   let content = '';
+  let pageCount = 0;
 
   try {
     if (fileType === 'pdf') {
       console.log(`[PARSER] Extracting text from PDF...`);
-      content = await parsePDF(buffer);
-      console.log(`[PARSER] ✅ PDF extracted (${content.length} characters)`);
+      const result = await parsePDF(buffer);
+      content = result.content;
+      pageCount = result.pageCount;
+
+      // Validate page count
+      if (pageCount > 200) {
+        throw new Error(`PDF has too many pages (${pageCount} pages, max 200). Please split into smaller files.`);
+      }
+
+      console.log(`[PARSER] ✅ PDF extracted (${content.length} characters, ${pageCount} pages)`);
     } else if (fileType === 'docx') {
       console.log(`[PARSER] Extracting text from DOCX...`);
       const result = await mammoth.extractRawText({ buffer });
@@ -186,10 +196,16 @@ export async function parseDocument(buffer: Buffer, filename: string): Promise<P
       throw new Error('Extracted content is empty');
     }
 
+    // Validate content size for Vercel payload limit (6MB max, but we use smaller limit)
+    if (content.length > 1000000) {
+      throw new Error(`Extracted content is too large (${(content.length / 1000000).toFixed(2)}MB, max 1MB). Please split into smaller files or reduce document size.`);
+    }
+
     return {
       title: filename.replace(/\.[^/.]+$/, ''),
       content: content.trim(),
       fileType,
+      pageCount,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Parsing failed';
