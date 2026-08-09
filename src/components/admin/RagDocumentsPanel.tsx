@@ -256,7 +256,7 @@ export default function RagDocumentsPanel() {
                 </div>
                 <p className="text-sm text-gray-600 line-clamp-2">{doc.content}</p>
                 <p className="text-xs text-gray-500 mt-2">
-                  Created: {new Date(doc.created_at).toLocaleDateString()}
+                  Created: {doc.created_at ? new Date(doc.created_at.replace(' ', 'T') + 'Z').toLocaleDateString() : 'Unknown Date'}
                 </p>
               </div>
             ))}
