@@ -3,13 +3,22 @@
 import { useState } from 'react';
 import { useAdminRagDocuments } from '@/hooks/useAdminRagDocuments';
 
+interface DocumentInfo {
+  id: string;
+  title: string;
+  source: string;
+  content: string;
+}
+
 export default function RagDocumentsPanel() {
-  const { documents, loading, error, uploadDocument } = useAdminRagDocuments();
+  const { documents, loading, error, uploadDocument, refetch } = useAdminRagDocuments();
   const [tab, setTab] = useState<'text' | 'files'>('text');
   const [content, setContent] = useState('');
   const [title, setTitle] = useState('');
   const [source, setSource] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [editing, setEditing] = useState<DocumentInfo | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [fileSource, setFileSource] = useState('');
@@ -74,11 +83,89 @@ export default function RagDocumentsPanel() {
           type: 'success',
           text: `✅ Successfully uploaded ${data.uploaded}/${data.total} file(s)`,
         });
+        await refetch();
       } else {
         setMessage({ type: 'error', text: `❌ Failed to upload any files` });
       }
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Upload failed';
+      setMessage({ type: 'error', text: `❌ ${errorMsg}` });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDelete = async (docId: string, docTitle: string) => {
+    if (!confirm(`Delete document "${docTitle}"? This cannot be undone.`)) {
+      return;
+    }
+
+    setDeleting(docId);
+    setMessage(null);
+
+    try {
+      const response = await fetch(`/api/admin/rag-documents/${docId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setMessage({ type: 'error', text: `❌ Delete failed: ${data.error?.message || 'Unknown error'}` });
+        return;
+      }
+
+      setMessage({ type: 'success', text: `✅ Document deleted successfully` });
+      await refetch();
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Delete failed';
+      setMessage({ type: 'error', text: `❌ ${errorMsg}` });
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  const handleEditStart = (doc: any) => {
+    setEditing({
+      id: doc.id,
+      title: doc.title,
+      source: doc.source,
+      content: doc.content,
+    });
+    setMessage(null);
+  };
+
+  const handleEditSave = async () => {
+    if (!editing) return;
+
+    setUploading(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch(`/api/admin/rag-documents/${editing.id}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: editing.title,
+          source: editing.source,
+          content: editing.content,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setMessage({ type: 'error', text: `❌ Update failed: ${data.error?.message || 'Unknown error'}` });
+        return;
+      }
+
+      setMessage({ type: 'success', text: `✅ Document updated successfully` });
+      setEditing(null);
+      await refetch();
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Update failed';
       setMessage({ type: 'error', text: `❌ ${errorMsg}` });
     } finally {
       setUploading(false);
@@ -250,9 +337,27 @@ export default function RagDocumentsPanel() {
                     <h5 className="font-semibold text-gray-800">{doc.title}</h5>
                     {doc.source && <p className="text-xs text-gray-600">Source: {doc.source}</p>}
                   </div>
-                  <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded">
-                    {doc.embedding ? '✓ Embedded' : 'Pending'}
-                  </span>
+                  <div className="flex gap-2 items-center">
+                    <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded">
+                      {doc.embedding ? '✓ Embedded' : 'Pending'}
+                    </span>
+                    <button
+                      onClick={() => handleEditStart(doc)}
+                      disabled={uploading || deleting === doc.id}
+                      className="text-xs px-2 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded disabled:opacity-50 transition"
+                      title="Edit document"
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      onClick={() => handleDelete(doc.id, doc.title)}
+                      disabled={uploading || deleting === doc.id}
+                      className="text-xs px-2 py-1 bg-red-100 text-red-700 hover:bg-red-200 rounded disabled:opacity-50 transition"
+                      title="Delete document"
+                    >
+                      {deleting === doc.id ? '⏳' : '🗑️'}
+                    </button>
+                  </div>
                 </div>
                 <p className="text-sm text-gray-600 line-clamp-2">{doc.content}</p>
                 <p className="text-xs text-gray-500 mt-2">
@@ -263,6 +368,69 @@ export default function RagDocumentsPanel() {
           </div>
         )}
       </div>
+
+      {/* Edit Modal */}
+      {editing && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
+            <h3 className="text-xl font-bold mb-4">✏️ Edit Document</h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Title</label>
+                <input
+                  type="text"
+                  value={editing.title}
+                  onChange={e => setEditing({ ...editing, title: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  disabled={uploading}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Source</label>
+                <input
+                  type="text"
+                  value={editing.source}
+                  onChange={e => setEditing({ ...editing, source: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  disabled={uploading}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Content ({editing.content.length} characters)
+                </label>
+                <textarea
+                  value={editing.content}
+                  onChange={e => setEditing({ ...editing, content: e.target.value })}
+                  rows={10}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                  disabled={uploading}
+                />
+              </div>
+
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setEditing(null)}
+                  disabled={uploading}
+                  className="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 disabled:opacity-50 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleEditSave}
+                  disabled={uploading || !editing.title.trim()}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition font-semibold"
+                >
+                  {uploading ? '⏳ Saving...' : '💾 Save Changes'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
