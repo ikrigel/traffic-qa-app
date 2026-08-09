@@ -1,8 +1,5 @@
 /* eslint-disable no-console */
 import mammoth from 'mammoth';
-import { writeFileSync, unlinkSync } from 'fs';
-import { tmpdir } from 'os';
-import { join } from 'path';
 
 // Polyfill DOM APIs for Node.js environment (required by pdfjs-dist)
 if (typeof globalThis !== 'undefined' && !globalThis.DOMMatrix) {
@@ -65,76 +62,79 @@ async function parsePDF(buffer: Buffer): Promise<string> {
   console.log('[PDF-PARSER] 🔍 Starting PDF text extraction...');
   console.log(`[PDF-PARSER] 📊 Buffer size: ${buffer.length} bytes`);
 
-  let tempFilePath: string | null = null;
-
   try {
-    // Use pdf-text-extract - requires file path, not buffer
-    console.log('[PDF-PARSER] 📦 Requiring pdf-text-extract library...');
+    // Use pdf2json - pure JavaScript, no external dependencies
+    console.log('[PDF-PARSER] 📦 Requiring pdf2json library...');
     // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
-    const pdfExtract = require('pdf-text-extract');
-    console.log('[PDF-PARSER] ✅ pdf-text-extract loaded');
-
-    // Create temporary file from buffer
-    console.log('[PDF-PARSER] 📁 Creating temporary file...');
-    tempFilePath = join(tmpdir(), `pdf-extract-${Date.now()}.pdf`);
-    console.log(`[PDF-PARSER] 📝 Temp file path: ${tempFilePath}`);
-
-    writeFileSync(tempFilePath, buffer);
-    console.log(`[PDF-PARSER] ✅ Temporary file created (${buffer.length} bytes written)`);
+    const PDFParser = require('pdf2json');
+    console.log('[PDF-PARSER] ✅ pdf2json loaded');
 
     return new Promise((resolve, reject) => {
-      console.log('[PDF-PARSER] 🔄 Starting extraction with file path...');
-      // pdf-text-extract requires a file path
-      pdfExtract(tempFilePath, {}, (err: any, pages: any) => {
-        console.log('[PDF-PARSER] 📞 Extraction callback triggered');
+      console.log('[PDF-PARSER] 🔄 Creating PDFParser instance...');
+      const pdfParser = new PDFParser();
 
-        // Cleanup temp file
-        if (tempFilePath) {
-          try {
-            unlinkSync(tempFilePath);
-            console.log('[PDF-PARSER] ✅ Temporary file deleted');
-          } catch (cleanupErr) {
-            console.warn('[PDF-PARSER] ⚠️ Failed to delete temp file:', cleanupErr);
-          }
-        }
-
-        if (err) {
-          console.error('[PDF-PARSER] ❌ EXTRACTION ERROR DETAILS:');
-          console.error(`[PDF-PARSER] Error type: ${err.constructor.name}`);
-          console.error(`[PDF-PARSER] Error message: ${err.message}`);
-          console.error(`[PDF-PARSER] Error stack: ${err.stack}`);
-          reject(new Error(`PDF extraction failed at library level: ${err.message}`));
-          return;
-        }
-
-        console.log(`[PDF-PARSER] 📄 Extraction successful. Pages received: ${typeof pages}, is array: ${Array.isArray(pages)}`);
-
-        if (!pages || !Array.isArray(pages)) {
-          console.error('[PDF-PARSER] ❌ INVALID RESPONSE:');
-          console.error(`[PDF-PARSER] Pages type: ${typeof pages}`);
-          console.error(`[PDF-PARSER] Pages value: ${JSON.stringify(pages)}`);
-          reject(new Error(`Invalid pages response: ${typeof pages}, expected array`));
-          return;
-        }
-
-        console.log(`[PDF-PARSER] 📑 Processing ${pages.length} pages...`);
-        const fullText = pages.join('\n');
-        console.log(`[PDF-PARSER] ✅ Text concatenation complete`);
-        console.log(`[PDF-PARSER] 📈 Extracted ${fullText.length} characters from ${pages.length} pages`);
-        resolve(fullText.trim());
+      console.log('[PDF-PARSER] 📡 Setting up event listeners...');
+      pdfParser.on('pdfParser_dataError', (error: any) => {
+        console.error('[PDF-PARSER] ❌ PARSER ERROR:');
+        console.error(`[PDF-PARSER] Error type: ${error.constructor.name}`);
+        console.error(`[PDF-PARSER] Error message: ${error.message}`);
+        console.error(`[PDF-PARSER] Error: ${JSON.stringify(error)}`);
+        reject(new Error(`PDF parsing error: ${error.message}`));
       });
+
+      pdfParser.on('pdfParser_dataReady', (data: any) => {
+        console.log('[PDF-PARSER] 📞 Parser data ready callback triggered');
+        try {
+          console.log(`[PDF-PARSER] 📊 PDF data received. Pages: ${data.Pages ? data.Pages.length : 'unknown'}`);
+
+          if (!data.Pages || !Array.isArray(data.Pages)) {
+            console.error('[PDF-PARSER] ❌ INVALID DATA:');
+            console.error(`[PDF-PARSER] Pages type: ${typeof data.Pages}`);
+            reject(new Error('No pages found in PDF'));
+            return;
+          }
+
+          console.log(`[PDF-PARSER] 📑 Processing ${data.Pages.length} pages...`);
+
+          // Extract text from all pages
+          let fullText = '';
+          for (let pageNum = 0; pageNum < data.Pages.length; pageNum++) {
+            const page = data.Pages[pageNum];
+            console.log(`[PDF-PARSER] 🔤 Extracting text from page ${pageNum + 1}...`);
+
+            if (page.Texts && Array.isArray(page.Texts)) {
+              const pageText = page.Texts.map((textItem: any) => {
+                if (textItem.R && Array.isArray(textItem.R)) {
+                  return textItem.R.map((r: any) => decodeURIComponent(r.T || '')).join('');
+                }
+                return '';
+              }).join(' ');
+
+              fullText += pageText + '\n';
+              console.log(`[PDF-PARSER] ✅ Page ${pageNum + 1} extracted (${pageText.length} chars)`);
+            }
+          }
+
+          console.log(`[PDF-PARSER] ✅ Text extraction complete`);
+          console.log(`[PDF-PARSER] 📈 Extracted ${fullText.length} characters from ${data.Pages.length} pages`);
+
+          if (fullText.trim().length === 0) {
+            console.warn('[PDF-PARSER] ⚠️ Warning: Extracted text is empty');
+          }
+
+          resolve(fullText.trim());
+        } catch (parseError) {
+          console.error('[PDF-PARSER] ❌ ERROR IN DATA PROCESSING:');
+          const message = parseError instanceof Error ? parseError.message : String(parseError);
+          console.error(`[PDF-PARSER] Error: ${message}`);
+          reject(parseError);
+        }
+      });
+
+      console.log('[PDF-PARSER] 🔄 Starting PDF parsing from buffer...');
+      pdfParser.parseBuffer(buffer);
     });
   } catch (error) {
-    // Cleanup on sync error
-    if (tempFilePath) {
-      try {
-        unlinkSync(tempFilePath);
-        console.log('[PDF-PARSER] ✅ Temporary file deleted (error cleanup)');
-      } catch (cleanupErr) {
-        console.warn('[PDF-PARSER] ⚠️ Failed to cleanup temp file:', cleanupErr);
-      }
-    }
-
     console.error('[PDF-PARSER] ❌ SYNC ERROR CAUGHT:');
     console.error(`[PDF-PARSER] Error type: ${error instanceof Error ? error.constructor.name : typeof error}`);
     console.error(`[PDF-PARSER] Error message: ${error instanceof Error ? error.message : String(error)}`);
