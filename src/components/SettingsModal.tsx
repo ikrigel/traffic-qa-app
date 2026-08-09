@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import UserSettings from './UserSettings';
+import PreferencesSettings from './PreferencesSettings';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -53,11 +54,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
         {/* Content */}
         {activeTab === 'api-keys' && <UserSettings />}
-        {activeTab === 'preferences' && (
-          <div className="text-center py-8">
-            <p className="text-gray-600">Theme and other preferences coming soon...</p>
-          </div>
-        )}
+        {activeTab === 'preferences' && <PreferencesSettings />}
       </div>
     </div>
   );
