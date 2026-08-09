@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/session';
 import { getServiceSupabase } from '@/lib/supabase';
-import { embedText } from '@/lib/gemini';
+import { embedWithFallback } from '@/lib/embeddings';
 import { apiError } from '@/lib/apiErrors';
 import { parseDocument } from '@/lib/documentParser';
 
@@ -63,17 +63,26 @@ export async function POST(request: NextRequest) {
         console.log(`[RAG-UPLOAD] 📄 Content length: ${parsed.content.length} characters`);
         console.log(`[RAG-UPLOAD] 🎯 File type detected: ${parsed.fileType}`);
 
-        // Generate embedding
+        // Generate embedding with fallback chain
         console.log(`[RAG-UPLOAD] 🧮 Generating embedding...`);
-        let embedding: number[] | null = null;
+        let embeddingResult: any = null;
+        let embedProvider: string | null = null;
+
         try {
-          embedding = await embedText(parsed.content);
-          console.log(`[RAG-UPLOAD] ✅ Embedding generated (${embedding.length} dimensions)`);
+          embeddingResult = await embedWithFallback(parsed.content);
+          if (embeddingResult) {
+            embedProvider = embeddingResult.provider;
+            console.log(`[RAG-UPLOAD] ✅ Embedding generated via ${embedProvider} (${embeddingResult.dimensions} dimensions)`);
+          } else {
+            console.warn(`[RAG-UPLOAD] ⚠️ No embedding providers available, continuing without embedding`);
+          }
         } catch (embedError) {
           const embedMsg = embedError instanceof Error ? embedError.message : String(embedError);
-          console.warn(`[RAG-UPLOAD] ⚠️ Embedding failed: ${embedMsg}`);
+          console.error(`[RAG-UPLOAD] ❌ Embedding error: ${embedMsg}`);
           console.warn(`[RAG-UPLOAD] ⚠️ Continuing without embedding (RAG search may not work optimally)`);
         }
+
+        const embedding = embeddingResult?.embedding || null;
 
         // Insert into database
         console.log(`[RAG-UPLOAD] 💾 Inserting into Supabase...`);
@@ -92,6 +101,7 @@ export async function POST(request: NextRequest) {
               fileSize: file.size,
               uploadedAt: new Date().toISOString(),
               embeddingStatus: embedding ? 'complete' : 'pending',
+              embeddingProvider: embedProvider || 'none',
             },
             created_by: user.id,
           })
