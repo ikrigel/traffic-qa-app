@@ -105,7 +105,16 @@ async function parsePDF(buffer: Buffer): Promise<string> {
             if (page.Texts && Array.isArray(page.Texts)) {
               const pageText = page.Texts.map((textItem: any) => {
                 if (textItem.R && Array.isArray(textItem.R)) {
-                  return textItem.R.map((r: any) => decodeURIComponent(r.T || '')).join('');
+                  return textItem.R.map((r: any) => {
+                    try {
+                      // Safe URI decoding - handle malformed URIs
+                      return decodeURIComponent(r.T || '');
+                    } catch (decodeError) {
+                      // If decoding fails, return raw text
+                      console.warn(`[PDF-PARSER] ⚠️ Failed to decode URI, using raw text`);
+                      return r.T || '';
+                    }
+                  }).join('');
                 }
                 return '';
               }).join(' ');
