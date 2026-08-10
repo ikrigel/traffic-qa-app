@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /**
  * Streaming file upload with client-side chunking
  * Breaks large files into 4MB chunks to avoid Vercel's 6MB request limit
@@ -26,29 +27,50 @@ async function uploadChunk(
   filename: string,
   source?: string
 ): Promise<{ sessionId: string; success: boolean; error?: string }> {
-  const formData = new FormData();
-  formData.append('sessionId', sessionId);
-  formData.append('chunkIndex', chunkIndex.toString());
-  formData.append('totalChunks', totalChunks.toString());
-  formData.append('filename', filename);
-  formData.append('chunk', chunk);
-  if (source) {
-    formData.append('source', source);
+  try {
+    console.log(`[UPLOAD-CHUNK] Preparing chunk ${chunkIndex + 1}/${totalChunks} (${(chunk.size / 1024 / 1024).toFixed(2)}MB)`);
+
+    const formData = new FormData();
+    formData.append('sessionId', sessionId);
+    formData.append('chunkIndex', chunkIndex.toString());
+    formData.append('totalChunks', totalChunks.toString());
+    formData.append('filename', filename);
+    formData.append('chunk', chunk);
+    if (source) {
+      formData.append('source', source);
+    }
+
+    console.log(`[UPLOAD-CHUNK] Sending POST to /api/admin/rag-documents/upload-chunk`);
+    const response = await fetch('/api/admin/rag-documents/upload-chunk', {
+      method: 'POST',
+      body: formData,
+      credentials: 'include',
+    });
+
+    console.log(`[UPLOAD-CHUNK] Response status: ${response.status}`);
+
+    let data;
+    try {
+      data = await response.json();
+      console.log(`[UPLOAD-CHUNK] Response data:`, data);
+    } catch (parseError) {
+      console.error(`[UPLOAD-CHUNK] Failed to parse response JSON:`, parseError);
+      throw new Error(`Server returned invalid JSON: ${response.statusText}`);
+    }
+
+    if (!response.ok) {
+      const errorMsg = data.error?.message || data.message || `HTTP ${response.status}`;
+      console.error(`[UPLOAD-CHUNK] Error: ${errorMsg}`);
+      throw new Error(`Chunk ${chunkIndex + 1} upload failed: ${errorMsg}`);
+    }
+
+    console.log(`[UPLOAD-CHUNK] ✅ Chunk ${chunkIndex + 1} uploaded successfully`);
+    return { sessionId: data.sessionId, success: true };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error(`[UPLOAD-CHUNK] Exception:`, msg);
+    throw error;
   }
-
-  const response = await fetch('/api/admin/rag-documents/upload-chunk', {
-    method: 'POST',
-    body: formData,
-    credentials: 'include',
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.error?.message || data.message || `Chunk upload failed: ${response.status}`);
-  }
-
-  return { sessionId: data.sessionId, success: true };
 }
 
 export async function uploadLargeFile(
@@ -89,6 +111,7 @@ export async function uploadLargeFile(
     console.log(`[CHUNKED-UPLOAD] ✅ All chunks uploaded, finalizing...`);
 
     // Finalize upload (server will merge all chunks and process)
+    console.log(`[CHUNKED-UPLOAD] Sending POST to /api/admin/rag-documents/upload-finalize with sessionId=${sessionId}`);
     const finalResponse = await fetch('/api/admin/rag-documents/upload-finalize', {
       method: 'POST',
       credentials: 'include',
@@ -96,11 +119,20 @@ export async function uploadLargeFile(
       body: JSON.stringify({ sessionId, filename: file.name, source }),
     });
 
-    const finalData = await finalResponse.json();
+    console.log(`[CHUNKED-UPLOAD] Finalize response status: ${finalResponse.status}`);
+
+    let finalData;
+    try {
+      finalData = await finalResponse.json();
+      console.log(`[CHUNKED-UPLOAD] Finalize response:`, finalData);
+    } catch (parseError) {
+      console.error(`[CHUNKED-UPLOAD] Failed to parse finalize response:`, parseError);
+      throw new Error(`Finalization server error: ${finalResponse.statusText}`);
+    }
 
     if (!finalResponse.ok) {
       const error = finalData.error;
-      let errorMsg = error?.message || finalData.error || 'Finalization failed';
+      let errorMsg = error?.message || finalData.error || `HTTP ${finalResponse.status}`;
 
       // Add suggestions for specific errors
       if (error?.code === 'PDF_PARSE_ERROR') {
@@ -110,6 +142,7 @@ export async function uploadLargeFile(
         }
       }
 
+      console.error(`[CHUNKED-UPLOAD] ❌ Finalization failed: ${errorMsg}`);
       throw new Error(errorMsg);
     }
 
@@ -121,7 +154,7 @@ export async function uploadLargeFile(
     }
 
     onProgress?.({ type: 'complete' });
-    console.log(`[CHUNKED-UPLOAD] ✅ Upload complete`);
+    console.log(`[CHUNKED-UPLOAD] ✅ Upload complete:`, finalData);
 
     return { success: true, results: finalData.results };
   } catch (error) {

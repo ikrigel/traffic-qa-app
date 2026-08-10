@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 'use client';
 
 import { useState } from 'react';
@@ -48,7 +49,10 @@ export default function RagDocumentsPanel() {
   };
 
   const handleFileUpload = async () => {
+    console.log(`[RAG-PANEL] handleFileUpload called, selectedFiles.length = ${selectedFiles.length}`);
+
     if (selectedFiles.length === 0) {
+      console.warn('[RAG-PANEL] No files selected');
       setMessage({ type: 'error', text: 'Please select at least one file' });
       return;
     }
@@ -61,23 +65,30 @@ export default function RagDocumentsPanel() {
       let totalUploaded = 0;
 
       for (const file of selectedFiles) {
-        console.log(`[RAG-PANEL] Starting upload for ${file.name}`);
+        console.log(`[RAG-PANEL] Starting upload for ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
         setUploadProgress({ file: file.name, progress: 0 });
 
         const result = await uploadLargeFile(file, {
           source: fileSource || undefined,
           onProgress: (event) => {
             if (event.type === 'progress' && event.progress !== undefined) {
+              console.log(`[RAG-PANEL] Progress for ${file.name}: ${event.progress}%`);
               setUploadProgress({ file: file.name, progress: event.progress });
             } else if (event.type === 'error') {
               console.error(`[RAG-PANEL] Upload error for ${file.name}:`, event.error);
+            } else if (event.type === 'complete') {
+              console.log(`[RAG-PANEL] Upload complete for ${file.name}`);
             }
           },
         });
 
+        console.log(`[RAG-PANEL] Upload result for ${file.name}:`, result);
+
         if (result.success) {
           totalUploaded++;
+          console.log(`[RAG-PANEL] ✅ Successfully uploaded: ${file.name}`);
         } else {
+          console.error(`[RAG-PANEL] ❌ Failed to upload ${file.name}: ${result.error}`);
           if (result.error?.includes('already uploaded')) {
             setMessage({
               type: 'error',
@@ -97,6 +108,7 @@ export default function RagDocumentsPanel() {
       setUploadProgress(null);
 
       if (totalUploaded > 0) {
+        console.log(`[RAG-PANEL] ✅ Upload successful: ${totalUploaded}/${selectedFiles.length} files`);
         setSelectedFiles([]);
         setFileSource('');
         setMessage({
@@ -105,10 +117,12 @@ export default function RagDocumentsPanel() {
         });
         await refetch();
       } else {
+        console.error('[RAG-PANEL] ❌ All uploads failed');
         setMessage({ type: 'error', text: `❌ Failed to upload all files` });
       }
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Upload failed';
+      console.error(`[RAG-PANEL] Exception during upload:`, err);
       setMessage({ type: 'error', text: `❌ ${errorMsg}` });
     } finally {
       setUploading(false);
@@ -200,14 +214,14 @@ export default function RagDocumentsPanel() {
       <h3 className="text-lg font-semibold text-gray-800">RAG Document Management</h3>
 
       {/* Upload Form */}
-      <div className="bg-indigo-50 rounded-lg p-6 border border-indigo-200 space-y-4">
-        <div className="flex gap-2 border-b border-indigo-200">
+      <div className="bg-indigo-50 dark:bg-gray-800 rounded-lg p-6 border border-indigo-200 dark:border-gray-700 space-y-4">
+        <div className="flex gap-2 border-b border-indigo-200 dark:border-gray-700">
           <button
             onClick={() => setTab('text')}
             className={`px-4 py-2 font-semibold transition ${
               tab === 'text'
-                ? 'text-indigo-700 border-b-2 border-indigo-700'
-                : 'text-gray-600 hover:text-indigo-600'
+                ? 'text-indigo-700 dark:text-indigo-400 border-b-2 border-indigo-700 dark:border-indigo-400'
+                : 'text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400'
             }`}
           >
             📝 Paste Text
@@ -216,8 +230,8 @@ export default function RagDocumentsPanel() {
             onClick={() => setTab('files')}
             className={`px-4 py-2 font-semibold transition ${
               tab === 'files'
-                ? 'text-indigo-700 border-b-2 border-indigo-700'
-                : 'text-gray-600 hover:text-indigo-600'
+                ? 'text-indigo-700 dark:text-indigo-400 border-b-2 border-indigo-700 dark:border-indigo-400'
+                : 'text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400'
             }`}
           >
             📁 Upload Files
@@ -239,40 +253,40 @@ export default function RagDocumentsPanel() {
         {tab === 'text' ? (
           <>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Title *</label>
+              <label className="block text-sm font-semibold text-gray-900 dark:text-gray-300 mb-2">Title *</label>
               <input
                 type="text"
                 value={title}
                 onChange={e => setTitle(e.target.value)}
                 placeholder="e.g., Traffic Safety Guidelines..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 disabled={uploading}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Source (optional)</label>
+              <label className="block text-sm font-semibold text-gray-900 dark:text-gray-300 mb-2">Source (optional)</label>
               <input
                 type="text"
                 value={source}
                 onChange={e => setSource(e.target.value)}
                 placeholder="e.g., Israeli Driving School Manual..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 disabled={uploading}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Content *</label>
+              <label className="block text-sm font-semibold text-gray-900 dark:text-gray-300 mb-2">Content *</label>
               <textarea
                 value={content}
                 onChange={e => setContent(e.target.value)}
                 placeholder="Paste your document content here..."
                 rows={6}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm"
                 disabled={uploading}
               />
-              <p className="text-xs text-gray-600 mt-1">{content.length} characters</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{content.length} characters</p>
             </div>
 
             <button
@@ -286,27 +300,32 @@ export default function RagDocumentsPanel() {
         ) : (
           <>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-gray-900 dark:text-gray-300 mb-2">
                 Select Files * (PDF, DOCX, TXT)
               </label>
               <input
                 type="file"
                 multiple
                 accept=".pdf,.docx,.txt"
-                onChange={e => setSelectedFiles(Array.from(e.target.files || []))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                onChange={e => {
+                  const files = Array.from(e.target.files || []);
+                  console.log(`[RAG-PANEL] File input changed: ${files.length} file(s) selected`);
+                  files.forEach((f, i) => console.log(`  [${i}] ${f.name} (${(f.size / 1024 / 1024).toFixed(2)}MB)`));
+                  setSelectedFiles(files);
+                }}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 disabled={uploading}
               />
-              <p className="text-xs text-gray-600 mt-2">
+              <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
                 📊 {selectedFiles.length} file(s) selected (max 50MB per file)
               </p>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 💡 If PDF upload fails: Try re-exporting as PDF/A format or convert using an online tool
               </p>
               {selectedFiles.length > 0 && (
                 <div className="mt-2 space-y-1">
                   {selectedFiles.map((file, idx) => (
-                    <div key={idx} className="text-xs text-gray-600 flex justify-between">
+                    <div key={idx} className="text-xs text-gray-600 dark:text-gray-400 flex justify-between">
                       <span>📄 {file.name}</span>
                       <span>{(file.size / 1024 / 1024).toFixed(2)}MB</span>
                     </div>
@@ -316,7 +335,7 @@ export default function RagDocumentsPanel() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-gray-900 dark:text-gray-300 mb-2">
                 Source Label (optional)
               </label>
               <input
@@ -324,7 +343,7 @@ export default function RagDocumentsPanel() {
                 value={fileSource}
                 onChange={e => setFileSource(e.target.value)}
                 placeholder="e.g., Driver's Manual Chapter 3..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 disabled={uploading}
               />
             </div>
