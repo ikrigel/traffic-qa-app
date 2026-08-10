@@ -205,9 +205,9 @@ export async function parseDocument(buffer: Buffer, filename: string): Promise<P
       throw new Error('Extracted content is empty');
     }
 
-    // Validate content size for Vercel payload limit (6MB max, but we use smaller limit)
-    if (content.length > 1000000) {
-      throw new Error(`Extracted content is too large (${(content.length / 1000000).toFixed(2)}MB, max 1MB). Please split into smaller files or reduce document size.`);
+    // Validate content size - chunked uploads can handle up to 5MB extracted content
+    if (content.length > 5000000) {
+      throw new Error(`Extracted content is too large (${(content.length / 1000000).toFixed(2)}MB, max 5MB). Please split into smaller files or reduce document size.`);
     }
 
     return {
