@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
 
     // Get document stats
     const supabase = getServiceSupabase();
-    const { data: allDocs, error: statsError } = await supabase
+    const { data: allDocs } = await supabase
       .from('rag_documents')
       .select('id, title, embedding', { count: 'exact' });
 
