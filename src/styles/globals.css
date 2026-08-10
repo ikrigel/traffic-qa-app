@@ -27,6 +27,12 @@ body {
   background-color: #ffffff;
   color: #1f2937;
   overflow-x: hidden;
+  transition: background-color 200ms ease-in-out, color 200ms ease-in-out;
+}
+
+html.dark body {
+  background-color: #111827;
+  color: #f3f4f6;
 }
 
 /* Ensure links and buttons are at least 44px for touch */

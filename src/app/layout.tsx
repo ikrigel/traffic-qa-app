@@ -22,7 +22,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#0ea5e9" />
         <Script src="/theme-loader.js" strategy="beforeInteractive" />
       </head>
-      <body className="bg-gray-50">
+      <body className="bg-white dark:bg-gray-900">
         <PreferencesProvider>{children}</PreferencesProvider>
       </body>
     </html>

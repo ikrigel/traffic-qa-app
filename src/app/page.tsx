@@ -44,20 +44,20 @@ export default function Home() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-gray-600">Loading...</div>
+      <main className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-gray-600 dark:text-gray-300">Loading...</div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
       {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-40">
+      <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex justify-between items-center gap-2">
           <div className="flex-1 min-w-0">
-            <h1 className="text-lg sm:text-2xl font-bold text-blue-600 truncate">Traffic Laws Q&A</h1>
-            <p className="text-xs sm:text-sm text-gray-600 line-clamp-1">קורס 54 - דרכים 2000 - פותח על ידי יגאל קריגל</p>
+            <h1 className="text-lg sm:text-2xl font-bold text-blue-600 dark:text-blue-400 truncate">Traffic Laws Q&A</h1>
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 line-clamp-1">קורס 54 - דרכים 2000 - פותח על ידי יגאל קריגל</p>
           </div>
           <div className="flex gap-1 sm:gap-2">
             {user && courseQuestions.length > 0 && (
