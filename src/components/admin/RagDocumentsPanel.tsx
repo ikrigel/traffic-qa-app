@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useAdminRagDocuments } from '@/hooks/useAdminRagDocuments';
+import { uploadLargeFile } from '@/lib/chunkedFileUpload';
 
 interface DocumentInfo {
   id: string;
@@ -22,6 +23,7 @@ export default function RagDocumentsPanel() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [fileSource, setFileSource] = useState('');
+  const [uploadProgress, setUploadProgress] = useState<{ file: string; progress: number } | null>(null);
 
   const handleUpload = async () => {
     if (!title.trim() || !content.trim()) {
@@ -53,45 +55,52 @@ export default function RagDocumentsPanel() {
 
     setUploading(true);
     setMessage(null);
+    setUploadProgress(null);
 
     try {
-      const formData = new FormData();
-      selectedFiles.forEach(file => {
-        formData.append('files', file);
-      });
-      if (fileSource.trim()) {
-        formData.append('source', fileSource);
+      let totalUploaded = 0;
+
+      for (const file of selectedFiles) {
+        console.log(`[RAG-PANEL] Starting upload for ${file.name}`);
+        setUploadProgress({ file: file.name, progress: 0 });
+
+        const result = await uploadLargeFile(file, {
+          source: fileSource || undefined,
+          onProgress: (event) => {
+            if (event.type === 'progress' && event.progress !== undefined) {
+              setUploadProgress({ file: file.name, progress: event.progress });
+            } else if (event.type === 'error') {
+              console.error(`[RAG-PANEL] Upload error for ${file.name}:`, event.error);
+            }
+          },
+        });
+
+        if (result.success) {
+          totalUploaded++;
+        } else {
+          setMessage({ type: 'error', text: `⚠️ ${file.name}: ${result.error}` });
+        }
       }
 
-      const response = await fetch('/api/admin/rag-documents/upload', {
-        method: 'POST',
-        body: formData,
-        credentials: 'include',
-      });
+      setUploadProgress(null);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        setMessage({ type: 'error', text: `❌ Upload failed: ${data.error?.message || data.message || 'Unknown error'}` });
-        return;
-      }
-
-      if (data.uploaded > 0) {
+      if (totalUploaded > 0) {
         setSelectedFiles([]);
         setFileSource('');
         setMessage({
           type: 'success',
-          text: `✅ Successfully uploaded ${data.uploaded}/${data.total} file(s)`,
+          text: `✅ Successfully uploaded ${totalUploaded}/${selectedFiles.length} file(s)`,
         });
         await refetch();
       } else {
-        setMessage({ type: 'error', text: `❌ Failed to upload any files` });
+        setMessage({ type: 'error', text: `❌ Failed to upload all files` });
       }
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Upload failed';
       setMessage({ type: 'error', text: `❌ ${errorMsg}` });
     } finally {
       setUploading(false);
+      setUploadProgress(null);
     }
   };
 
@@ -304,6 +313,21 @@ export default function RagDocumentsPanel() {
                 disabled={uploading}
               />
             </div>
+
+            {uploadProgress && (
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <div className="flex justify-between mb-2">
+                  <span className="text-sm font-semibold text-blue-700">📤 {uploadProgress.file}</span>
+                  <span className="text-sm font-semibold text-blue-700">{uploadProgress.progress}%</span>
+                </div>
+                <div className="w-full bg-blue-200 rounded-full h-2">
+                  <div
+                    className="bg-blue-600 h-2 rounded-full transition-all"
+                    style={{ width: `${uploadProgress.progress}%` }}
+                  />
+                </div>
+              </div>
+            )}
 
             <button
               onClick={handleFileUpload}
