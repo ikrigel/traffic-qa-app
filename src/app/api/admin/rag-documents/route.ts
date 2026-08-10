@@ -27,9 +27,9 @@ export async function GET(request: NextRequest) {
         source: d.source,
         content: d.content,
         metadata: d.metadata,
+        embedding: d.embedding ? true : false,
         createdBy: d.created_by,
         createdAt: d.created_at,
-        hasEmbedding: !!d.embedding,
       })),
     });
   } catch (error) {
