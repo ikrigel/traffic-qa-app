@@ -185,8 +185,8 @@ export async function parseDocument(buffer: Buffer, filename: string): Promise<P
       pageCount = result.pageCount;
 
       // Validate page count
-      if (pageCount > 200) {
-        throw new Error(`PDF has too many pages (${pageCount} pages, max 200). Please split into smaller files.`);
+      if (pageCount > 300) {
+        throw new Error(`PDF has too many pages (${pageCount} pages, max 300). Please split into smaller files.`);
       }
 
       console.log(`[PARSER] ✅ PDF extracted (${content.length} characters, ${pageCount} pages)`);
