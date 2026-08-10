@@ -3,6 +3,7 @@ import { requireRole } from '@/lib/requireRole';
 import { getServiceSupabase } from '@/lib/supabase';
 import { apiError } from '@/lib/apiErrors';
 import { appLog, logError } from '@/lib/logger';
+import { deleteAllChunksForDocument } from '@/lib/ragValidation';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,10 +43,16 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       throw error;
     }
 
+    // Delete all related chunks if this is a parent document
+    let chunksDeleted = 0;
+    if (doc?.title) {
+      chunksDeleted = await deleteAllChunksForDocument(supabase, doc.title);
+    }
+
     await appLog({
       source: 'admin/rag-documents',
-      message: `✅ RAG document deleted: "${doc?.title || id}"`,
-      context: { docId: id, title: doc?.title, source: doc?.source },
+      message: `✅ RAG document deleted: "${doc?.title || id}"${chunksDeleted > 0 ? ` (+ ${chunksDeleted} chunks)` : ''}`,
+      context: { docId: id, title: doc?.title, source: doc?.source, chunksDeleted },
     });
 
     return NextResponse.json({

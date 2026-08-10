@@ -7,6 +7,7 @@ import { embedWithFallback } from '@/lib/embeddings';
 import { parseDocument } from '@/lib/documentParser';
 import { appLog, logError } from '@/lib/logger';
 import { chunkDocument, formatChunkInfo } from '@/lib/pdfChunker';
+import { calculateContentHash, checkForDuplicate } from '@/lib/documentHash';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
@@ -69,6 +70,9 @@ export async function POST(request: NextRequest) {
 
     console.log(`[CHUNK-FINALIZE] Starting finalization for ${filename}`);
 
+    // Initialize Supabase
+    const supabase = getServiceSupabase();
+
     // Merge all chunks into a single buffer
     const buffer = await mergeChunks(sessionId);
 
@@ -77,6 +81,37 @@ export async function POST(request: NextRequest) {
     const parsed = await parseDocument(buffer, filename);
     console.log(`[CHUNK-FINALIZE] ✅ Document parsed: "${parsed.title}"`);
     console.log(`[CHUNK-FINALIZE] 📄 Content length: ${parsed.content.length} characters`);
+
+    // Calculate content hash and check for duplicates
+    console.log(`[CHUNK-FINALIZE] 🔍 Checking for duplicate content...`);
+    const contentHash = calculateContentHash(parsed.content);
+    const dupCheck = await checkForDuplicate(supabase, contentHash);
+
+    if (dupCheck.isDuplicate) {
+      console.log(`[CHUNK-FINALIZE] ⚠️ Duplicate detected: "${dupCheck.existingDocTitle}"`);
+      await appLog({
+        source: 'rag-finalize',
+        message: `⚠️ Upload rejected: duplicate file "${filename}"`,
+        context: {
+          fileName: filename,
+          existingDocId: dupCheck.existingDocId,
+          existingDocTitle: dupCheck.existingDocTitle,
+          contentHash,
+        },
+      });
+
+      return NextResponse.json({
+        success: false,
+        error: {
+          code: 'DUPLICATE_FILE',
+          message: `This file is already uploaded as "${dupCheck.existingDocTitle}" (${dupCheck.existingDocSource || 'no source'})`,
+          existingDocId: dupCheck.existingDocId,
+          existingDocTitle: dupCheck.existingDocTitle,
+        },
+      }, { status: 409 });
+    }
+
+    console.log(`[CHUNK-FINALIZE] ✅ No duplicates found`);
 
     // Check if content needs chunking
     const MAX_CONTENT_LENGTH = 150000; // 150KB chars per chunk
@@ -105,7 +140,6 @@ export async function POST(request: NextRequest) {
 
     // Process each document/chunk
     const results: any[] = [];
-    const supabase = getServiceSupabase();
 
     for (const doc of documentsToProcess) {
       try {
@@ -149,6 +183,7 @@ export async function POST(request: NextRequest) {
               uploadedAt: new Date().toISOString(),
               embeddingStatus: embedding ? 'complete' : 'pending',
               embeddingProvider: embedProvider || 'none',
+              contentHash: contentHash,
               isChunk: doc.isChunk,
               chunkIndex: doc.chunkIndex,
               totalChunks: doc.totalChunks,

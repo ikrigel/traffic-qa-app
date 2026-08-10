@@ -78,7 +78,14 @@ export default function RagDocumentsPanel() {
         if (result.success) {
           totalUploaded++;
         } else {
-          setMessage({ type: 'error', text: `⚠️ ${file.name}: ${result.error}` });
+          if (result.error?.includes('already uploaded')) {
+            setMessage({
+              type: 'error',
+              text: `📋 ${file.name}: This file is already in the database. Skipping duplicate upload.`,
+            });
+          } else {
+            setMessage({ type: 'error', text: `⚠️ ${file.name}: ${result.error}` });
+          }
         }
       }
 

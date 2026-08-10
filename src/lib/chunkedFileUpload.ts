@@ -99,7 +99,15 @@ export async function uploadLargeFile(
     const finalData = await finalResponse.json();
 
     if (!finalResponse.ok) {
-      throw new Error(finalData.error?.message || 'Finalization failed');
+      const errorMsg = finalData.error?.message || finalData.error || 'Finalization failed';
+      throw new Error(errorMsg);
+    }
+
+    // Check if it's a duplicate
+    if (finalData.error?.code === 'DUPLICATE_FILE') {
+      const dupMsg = `File already uploaded as "${finalData.error.existingDocTitle}" - ${finalData.error.message}`;
+      console.log(`[CHUNKED-UPLOAD] ℹ️ Duplicate: ${dupMsg}`);
+      return { success: false, error: dupMsg };
     }
 
     onProgress?.({ type: 'complete' });
