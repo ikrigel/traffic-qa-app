@@ -77,9 +77,18 @@ async function parsePDF(buffer: Buffer): Promise<{ content: string; pageCount: n
       pdfParser.on('pdfParser_dataError', (error: any) => {
         console.error('[PDF-PARSER] ❌ PARSER ERROR:');
         console.error(`[PDF-PARSER] Error type: ${error.constructor.name}`);
-        console.error(`[PDF-PARSER] Error message: ${error.message}`);
-        console.error(`[PDF-PARSER] Error: ${JSON.stringify(error)}`);
-        reject(new Error(`PDF parsing error: ${error.message}`));
+        const errorMsg = error.message || error.parserError || JSON.stringify(error);
+        console.error(`[PDF-PARSER] Error message: ${errorMsg}`);
+
+        // Provide helpful error messages based on error type
+        let userMessage = 'PDF parsing failed';
+        if (errorMsg.includes('XRef') || errorMsg.includes('Invalid')) {
+          userMessage = 'PDF format not supported or corrupted. Try: 1) Re-export the PDF from the source, 2) Use a different PDF tool, 3) Convert to PDF/A format';
+        } else if (errorMsg.includes('permission') || errorMsg.includes('encrypted')) {
+          userMessage = 'PDF is password-protected or encrypted. Please remove encryption and try again.';
+        }
+
+        reject(new Error(`${userMessage} (${errorMsg})`));
       });
 
       pdfParser.on('pdfParser_dataReady', (data: any) => {

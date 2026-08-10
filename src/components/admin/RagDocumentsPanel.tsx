@@ -83,6 +83,11 @@ export default function RagDocumentsPanel() {
               type: 'error',
               text: `📋 ${file.name}: This file is already in the database. Skipping duplicate upload.`,
             });
+          } else if (result.error?.includes('PDF')) {
+            setMessage({
+              type: 'error',
+              text: `📄 ${file.name}: PDF format not supported.\n\n${result.error}`,
+            });
           } else {
             setMessage({ type: 'error', text: `⚠️ ${file.name}: ${result.error}` });
           }
@@ -294,6 +299,9 @@ export default function RagDocumentsPanel() {
               />
               <p className="text-xs text-gray-600 mt-2">
                 📊 {selectedFiles.length} file(s) selected (max 50MB per file)
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                💡 If PDF upload fails: Try re-exporting as PDF/A format or convert using an online tool
               </p>
               {selectedFiles.length > 0 && (
                 <div className="mt-2 space-y-1">

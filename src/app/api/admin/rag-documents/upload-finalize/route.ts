@@ -78,9 +78,35 @@ export async function POST(request: NextRequest) {
 
     // Parse document
     console.log(`[CHUNK-FINALIZE] 📝 Parsing document...`);
-    const parsed = await parseDocument(buffer, filename);
-    console.log(`[CHUNK-FINALIZE] ✅ Document parsed: "${parsed.title}"`);
-    console.log(`[CHUNK-FINALIZE] 📄 Content length: ${parsed.content.length} characters`);
+    let parsed;
+    try {
+      parsed = await parseDocument(buffer, filename);
+      console.log(`[CHUNK-FINALIZE] ✅ Document parsed: "${parsed.title}"`);
+      console.log(`[CHUNK-FINALIZE] 📄 Content length: ${parsed.content.length} characters`);
+    } catch (parseError) {
+      const errorMsg = parseError instanceof Error ? parseError.message : 'Unknown parsing error';
+      console.error(`[CHUNK-FINALIZE] ❌ Parse failed: ${errorMsg}`);
+
+      await appLog({
+        source: 'rag-finalize',
+        message: `❌ PDF parsing failed: ${filename}`,
+        context: { fileName: filename, error: errorMsg },
+      });
+
+      return NextResponse.json({
+        success: false,
+        error: {
+          code: 'PDF_PARSE_ERROR',
+          message: errorMsg,
+          suggestions: [
+            '1. Try re-exporting the PDF from the source application',
+            '2. Use an online PDF conversion tool to convert to PDF/A',
+            '3. Check if the PDF is password-protected or encrypted',
+            '4. Try a different PDF file format',
+          ],
+        },
+      }, { status: 400 });
+    }
 
     // Calculate content hash and check for duplicates
     console.log(`[CHUNK-FINALIZE] 🔍 Checking for duplicate content...`);

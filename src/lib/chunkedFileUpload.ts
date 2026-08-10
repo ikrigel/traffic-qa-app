@@ -99,7 +99,17 @@ export async function uploadLargeFile(
     const finalData = await finalResponse.json();
 
     if (!finalResponse.ok) {
-      const errorMsg = finalData.error?.message || finalData.error || 'Finalization failed';
+      const error = finalData.error;
+      let errorMsg = error?.message || finalData.error || 'Finalization failed';
+
+      // Add suggestions for specific errors
+      if (error?.code === 'PDF_PARSE_ERROR') {
+        console.log(`[CHUNKED-UPLOAD] ⚠️ PDF parsing error: ${errorMsg}`);
+        if (error.suggestions && Array.isArray(error.suggestions)) {
+          errorMsg += '\n\nTry: ' + error.suggestions.join(' or ');
+        }
+      }
+
       throw new Error(errorMsg);
     }
 
