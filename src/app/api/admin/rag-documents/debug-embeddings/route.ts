@@ -15,14 +15,14 @@ export async function GET(request: NextRequest) {
     const supabase = getServiceSupabase();
 
     // Check total documents
-    const { data: totalData, count: totalCount } = await supabase
+    const { count: totalCount } = await supabase
       .from('rag_documents')
       .select('id', { count: 'exact' });
 
     console.log(`[DEBUG] Total documents: ${totalCount}`);
 
     // Check documents with embeddings
-    const { data: withEmbedData, count: embeddedCount } = await supabase
+    const { count: embeddedCount } = await supabase
       .from('rag_documents')
       .select('id', { count: 'exact' })
       .not('embedding', 'is', null);
