@@ -45,13 +45,30 @@ export const embedText = async (text: string): Promise<number[]> => {
     const client = getGeminiClient();
     console.log('[GEMINI] Client obtained, getting model...');
 
-    console.log('[GEMINI] Getting embedding model (models/text-embedding-004)...');
-    const model = client.getGenerativeModel({ model: 'models/text-embedding-004' });
-    console.log('[GEMINI] Model obtained, calling embedContent...');
+    // Try text-embedding-004 first, fall back to embedding-001
+    let model;
+    let modelName = 'models/text-embedding-004';
 
-    const result = await model.embedContent(text);
-    console.log('[GEMINI] ✅ Embedding successful, dimensions:', result.embedding.values.length);
-    return result.embedding.values;
+    try {
+      console.log('[GEMINI] Trying model: text-embedding-004...');
+      model = client.getGenerativeModel({ model: modelName });
+      const result = await model.embedContent(text);
+      console.log('[GEMINI] ✅ Embedding successful with text-embedding-004, dimensions:', result.embedding.values.length);
+      return result.embedding.values;
+    } catch (error404) {
+      // Try fallback model
+      console.log('[GEMINI] ⚠️ text-embedding-004 failed, trying embedding-001...');
+      modelName = 'models/embedding-001';
+      try {
+        model = client.getGenerativeModel({ model: modelName });
+        const result = await model.embedContent(text);
+        console.log('[GEMINI] ✅ Embedding successful with embedding-001, dimensions:', result.embedding.values.length);
+        return result.embedding.values;
+      } catch (fallbackError) {
+        console.error('[GEMINI] ❌ Both embedding models failed');
+        throw fallbackError;
+      }
+    }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Embedding failed';
     console.error('[GEMINI] ❌ Embedding error:', message);
