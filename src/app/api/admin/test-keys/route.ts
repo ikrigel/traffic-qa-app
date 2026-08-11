@@ -14,10 +14,10 @@ export async function POST(request: NextRequest) {
     console.log('[TEST-KEYS] Checking API keys in environment...');
 
     const keys = {
-      GEMINI_API_KEY: !!process.env.GEMINI_API_KEY ? `✅ (${process.env.GEMINI_API_KEY.substring(0, 10)}...)` : '❌ Missing',
-      GROQ_API_KEY: !!process.env.GROQ_API_KEY ? `✅ (${process.env.GROQ_API_KEY.substring(0, 10)}...)` : '❌ Missing',
-      OPENAI_API_KEY: !!process.env.OPENAI_API_KEY ? `✅ (${process.env.OPENAI_API_KEY.substring(0, 10)}...)` : '❌ Missing',
-      HUGGINGFACE_API_KEY: !!process.env.HUGGINGFACE_API_KEY ? `✅ (${process.env.HUGGINGFACE_API_KEY.substring(0, 10)}...)` : '❌ Missing',
+      GEMINI_API_KEY: process.env.GEMINI_API_KEY ? `✅ (${process.env.GEMINI_API_KEY.substring(0, 10)}...)` : '❌ Missing',
+      GROQ_API_KEY: process.env.GROQ_API_KEY ? `✅ (${process.env.GROQ_API_KEY.substring(0, 10)}...)` : '❌ Missing',
+      OPENAI_API_KEY: process.env.OPENAI_API_KEY ? `✅ (${process.env.OPENAI_API_KEY.substring(0, 10)}...)` : '❌ Missing',
+      HUGGINGFACE_API_KEY: process.env.HUGGINGFACE_API_KEY ? `✅ (${process.env.HUGGINGFACE_API_KEY.substring(0, 10)}...)` : '❌ Missing',
     };
 
     console.log('[TEST-KEYS] Keys status:', keys);
