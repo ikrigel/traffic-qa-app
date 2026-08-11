@@ -6,11 +6,6 @@ const nextConfig = {
   experimental: {
     typedRoutes: true,
   },
-  api: {
-    bodyParser: {
-      sizeLimit: '50mb',
-    },
-  },
   headers: async () => [
     {
       source: '/:path*',
