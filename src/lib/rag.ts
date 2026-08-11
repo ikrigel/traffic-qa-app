@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { embedText } from './gemini';
+import { embedWithFallback } from './embeddings';
 import { getServiceSupabase } from './supabase';
 import { logError } from './logger';
 
@@ -19,15 +19,17 @@ export const retrieveRelevantDocuments = async (
     console.log('[RAG] ===== retrieveRelevantDocuments called =====');
     console.log('[RAG] Query:', query.substring(0, 50));
     console.log('[RAG] Limit:', limit);
-    console.log('[RAG] Step 1: Calling embedText...');
+    console.log('[RAG] Step 1: Calling embedWithFallback...');
     let queryEmbedding: number[];
     try {
-      queryEmbedding = await embedText(query);
-      console.log('[RAG] Step 2: ✅ Query embedded successfully, dimensions:', queryEmbedding.length);
-      console.log('[RAG] Embedding type:', typeof queryEmbedding, 'Is array:', Array.isArray(queryEmbedding));
-      if (Array.isArray(queryEmbedding) && queryEmbedding.length > 0) {
-        console.log('[RAG] First 3 embedding values:', queryEmbedding.slice(0, 3));
+      const embedResult = await embedWithFallback(query);
+      if (!embedResult) {
+        throw new Error('All embedding providers failed');
       }
+      queryEmbedding = embedResult.embedding;
+      console.log('[RAG] Step 2: ✅ Query embedded successfully via', embedResult.provider);
+      console.log('[RAG] Dimensions:', queryEmbedding.length, 'Model:', embedResult.model);
+      console.log('[RAG] First 3 embedding values:', queryEmbedding.slice(0, 3));
     } catch (embedError) {
       const embedMsg = embedError instanceof Error ? embedError.message : String(embedError);
       console.error('[RAG] ❌ EMBEDDING FAILED:', embedMsg);
