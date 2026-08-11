@@ -39,9 +39,14 @@ export const retrieveRelevantDocuments = async (
     const supabase = getServiceSupabase();
     console.log('[RAG] Step 4: Calling RPC match_rag_documents...');
     console.log('[RAG] RPC params - embedding length:', queryEmbedding.length, 'match_count:', limit);
+    console.log('[RAG] Embedding as JSON:', JSON.stringify(queryEmbedding.slice(0, 3)));
+
+    // Ensure embedding is in correct format for Supabase vector
+    const vectorParam = queryEmbedding;
+    console.log('[RAG] Calling RPC with vector param type:', typeof vectorParam);
 
     const { data, error } = await supabase.rpc('match_rag_documents', {
-      query_embedding: queryEmbedding,
+      query_embedding: vectorParam,
       match_count: limit,
     });
 
