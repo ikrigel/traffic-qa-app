@@ -6,20 +6,33 @@ const geminiProvider: GenerationProvider = {
   async generate(apiKey: string, systemPrompt: string, userPrompt: string): Promise<string> {
     try {
       const client = new GoogleGenerativeAI(apiKey);
-      const model = client.getGenerativeModel({ model: 'gemini-1.5-flash' });
-
       const fullPrompt = systemPrompt ? `${systemPrompt}\n\n${userPrompt}` : userPrompt;
 
-      const response = await model.generateContent({
-        contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
-      });
+      // Try gemini-1.5-flash first, fall back to gemini-pro
+      const models = ['gemini-1.5-flash', 'gemini-pro'];
+      let lastError: Error | null = null;
 
-      const textContent = response.response.candidates?.[0]?.content?.parts?.[0] as { text?: string } | undefined;
-      if (!textContent || !('text' in textContent) || !textContent.text) {
-        throw new Error('No text response from Gemini');
+      for (const modelName of models) {
+        try {
+          const model = client.getGenerativeModel({ model: modelName });
+          const response = await model.generateContent({
+            contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
+          });
+
+          const textContent = response.response.candidates?.[0]?.content?.parts?.[0] as { text?: string } | undefined;
+          if (!textContent || !('text' in textContent) || !textContent.text) {
+            lastError = new Error('No text response from Gemini');
+            continue;
+          }
+
+          return textContent.text;
+        } catch (modelError) {
+          lastError = modelError instanceof Error ? modelError : new Error(String(modelError));
+          continue;
+        }
       }
 
-      return textContent.text;
+      throw lastError || new Error('All Gemini models failed');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Generation failed';
       if (message.includes('API key')) throw new ProviderCallError('INVALID_KEY', message);
