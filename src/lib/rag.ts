@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
 import { embedWithFallback } from './embeddings';
+import { queryVectors } from './pinecone';
 import { getServiceSupabase } from './supabase';
 import { logError } from './logger';
 
@@ -19,61 +20,57 @@ export const retrieveRelevantDocuments = async (
     console.log('[RAG] ===== retrieveRelevantDocuments called =====');
     console.log('[RAG] Query:', query.substring(0, 50));
     console.log('[RAG] Limit:', limit);
-    console.log('[RAG] Step 1: Calling embedWithFallback...');
+
     let queryEmbedding: number[];
     try {
       const embedResult = await embedWithFallback(query);
-      if (!embedResult) {
-        throw new Error('All embedding providers failed');
-      }
+      if (!embedResult) throw new Error('All embedding providers failed');
       queryEmbedding = embedResult.embedding;
-      console.log('[RAG] Step 2: ✅ Query embedded successfully via', embedResult.provider);
-      console.log('[RAG] Dimensions:', queryEmbedding.length, 'Model:', embedResult.model);
-      console.log('[RAG] First 3 embedding values:', queryEmbedding.slice(0, 3));
+      console.log('[RAG] ✅ Query embedded via', embedResult.provider);
+      console.log('[RAG] Dimensions:', queryEmbedding.length);
     } catch (embedError) {
       const embedMsg = embedError instanceof Error ? embedError.message : String(embedError);
       console.error('[RAG] ❌ EMBEDDING FAILED:', embedMsg);
-      console.error('[RAG] Full embedding error:', embedError);
       throw new Error(`Embedding failed: ${embedMsg}`);
     }
 
-    console.log('[RAG] Step 3: Getting Supabase client...');
+    console.log('[RAG] Querying Pinecone...');
+    const matches = await queryVectors(queryEmbedding, limit);
+    console.log('[RAG] ✅ Pinecone returned', matches.length, 'documents');
+
+    if (matches.length === 0) {
+      console.log('[RAG] No documents found');
+      return [];
+    }
+
+    // Fetch full document content from Supabase using IDs from Pinecone
+    const docIds = matches.map(m => m.id);
     const supabase = getServiceSupabase();
-    console.log('[RAG] Step 4: Calling RPC match_rag_documents...');
-    console.log('[RAG] RPC params - embedding length:', queryEmbedding.length, 'match_count:', limit);
-    console.log('[RAG] Embedding as JSON:', JSON.stringify(queryEmbedding.slice(0, 3)));
+    const { data: docs, error } = await supabase
+      .from('rag_documents')
+      .select('id, title, content, source')
+      .in('id', docIds);
 
-    // Ensure embedding is in correct format for Supabase vector
-    const vectorParam = queryEmbedding;
-    console.log('[RAG] Calling RPC with vector param type:', typeof vectorParam);
+    if (error) throw error;
 
-    const { data, error } = await supabase.rpc('match_rag_documents', {
-      query_embedding: vectorParam,
-      match_count: limit,
-    });
+    const docMap = new Map(docs.map((d: any) => [d.id, d]));
 
-    if (error) {
-      console.error('[RAG] ❌ RPC ERROR:', error.message);
-      console.error('[RAG] Full RPC error:', error);
-      throw new Error(`RPC failed: ${error.message}`);
-    }
-
-    console.log('[RAG] ✅ RPC returned', data?.length || 0, 'documents');
-    if (data && data.length > 0) {
-      console.log('[RAG] Top result:', data[0].title, 'similarity:', data[0].similarity);
-    }
-
-    return (data || []).map((doc: any) => ({
-      id: doc.id,
-      title: doc.title,
-      content: doc.content,
-      source: doc.source,
-      similarity: doc.similarity,
-    }));
+    return matches
+      .map((match, index) => {
+        const doc = docMap.get(match.id);
+        if (!doc) return null;
+        return {
+          id: doc.id,
+          title: doc.title,
+          content: doc.content,
+          source: doc.source,
+          similarity: match.score || (1 - index * 0.1),
+        };
+      })
+      .filter((d): d is RetrievedDocument => d !== null);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Document retrieval failed';
-    console.error('[RAG] ❌ DOCUMENT RETRIEVAL ERROR:', message);
-    console.error('[RAG] Full error:', error);
+    console.error('[RAG] ❌ ERROR:', message);
     await logError({ source: 'rag.retrieveRelevantDocuments', message, context: { gracefullFallback: true } });
     return [];
   }

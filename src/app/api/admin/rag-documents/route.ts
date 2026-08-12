@@ -3,6 +3,7 @@ import { requireRole } from '@/lib/requireRole';
 import { getServiceSupabase } from '@/lib/supabase';
 import { embedText } from '@/lib/gemini';
 import { logError } from '@/lib/logger';
+import { getPineconeIndex } from '@/lib/pinecone';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,11 +15,26 @@ export async function GET(request: NextRequest) {
     const supabase = getServiceSupabase();
     const { data, error } = await supabase
       .from('rag_documents')
-      .select('id, title, source, content, metadata, created_by, created_at, embedding')
+      .select('id, title, source, content, metadata, created_by, created_at')
       .order('created_at', { ascending: false })
       .limit(100);
 
     if (error) throw error;
+
+    const index = getPineconeIndex();
+    const vectorIds = new Set<string>();
+
+    // Check which documents have vectors in Pinecone
+    for (const doc of data || []) {
+      try {
+        const result = await index.fetch({ ids: [doc.id] });
+        if (result.records && result.records[doc.id]) {
+          vectorIds.add(doc.id);
+        }
+      } catch {
+        // Vector not found
+      }
+    }
 
     return NextResponse.json({
       documents: (data || []).map(d => ({
@@ -27,7 +43,7 @@ export async function GET(request: NextRequest) {
         source: d.source,
         content: d.content,
         metadata: d.metadata,
-        embedding: d.embedding ? true : false,
+        embedding: vectorIds.has(d.id),
         createdBy: d.created_by,
         createdAt: d.created_at,
       })),
@@ -78,10 +94,18 @@ export async function POST(request: NextRequest) {
 
     try {
       const embedding = await embedText(content);
-      await supabase
-        .from('rag_documents')
-        .update({ embedding })
-        .eq('id', doc.id);
+      const index = getPineconeIndex();
+      await index.upsert({
+        records: [{
+          id: doc.id,
+          values: embedding,
+          metadata: {
+            title,
+            source: source || '',
+            createdAt: new Date().toISOString(),
+          },
+        }],
+      });
     } catch (embeddingError) {
       await logError({
         source: 'admin/rag-documents',
