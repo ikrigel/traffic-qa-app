@@ -32,6 +32,7 @@ export async function POST(request: NextRequest) {
     const index = getPineconeIndex();
     const vectors = [];
     let embeddingErrors = 0;
+    const embeddingErrorDetails: Record<string, string> = {};
 
     // Generate embeddings and prepare vectors
     for (const doc of documents) {
@@ -50,7 +51,9 @@ export async function POST(request: NextRequest) {
         });
       } catch (error) {
         embeddingErrors++;
-        console.error(`[MIGRATION] Failed to embed ${doc.id}:`, error);
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        embeddingErrorDetails[doc.id] = errorMsg;
+        console.error(`[MIGRATION] Failed to embed ${doc.id}:`, errorMsg);
       }
     }
 
@@ -83,6 +86,7 @@ export async function POST(request: NextRequest) {
       total: documents.length,
       upserted,
       embeddingErrors,
+      ...(embeddingErrors > 0 && { errorDetails: embeddingErrorDetails }),
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Migration failed';
