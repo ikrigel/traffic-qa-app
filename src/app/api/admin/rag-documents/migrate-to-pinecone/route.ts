@@ -120,13 +120,33 @@ export async function POST(request: NextRequest) {
 
     console.log(`[MIGRATION] Migration complete: ${upserted} vectors upserted, ${embeddingErrors} embedding errors`);
 
-    return NextResponse.json({
+    const summary: Record<string, any> = {
       message: 'Migration completed',
       total: documents.length,
+      vectorsCreated: vectors.length,
       upserted,
       embeddingErrors,
-      ...(embeddingErrors > 0 && { errorDetails: embeddingErrorDetails }),
-    });
+      debug: {
+        vectorsArrayLength: vectors.length,
+        upsertsSuccessful: upserted,
+        embeddingErrorCount: embeddingErrors,
+        hasErrors: embeddingErrors > 0 || upserted === 0,
+      },
+    };
+
+    if (embeddingErrors > 0) {
+      summary.errorDetails = embeddingErrorDetails;
+    }
+
+    if (vectors.length === 0 && documents.length > 0) {
+      summary.warning = '⚠️ No vectors were created. All documents may have failed embedding.';
+    }
+
+    if (upserted === 0 && vectors.length > 0) {
+      summary.warning = '⚠️ Vectors were created but none were upserted to Pinecone. Check Pinecone connection.';
+    }
+
+    return NextResponse.json(summary);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Migration failed';
     console.error('[MIGRATION] Error:', message);

@@ -54,6 +54,18 @@ export const embedText = async (text: string): Promise<number[]> => {
         console.log(`[GEMINI] Trying model: ${modelName}...`);
         const model = client.getGenerativeModel({ model: modelName });
         const result = await model.embedContent(text);
+
+        console.log(`[GEMINI] ✅ Got result from ${modelName}:`, {
+          hasEmbedding: !!result.embedding,
+          hasValues: !!result.embedding?.values,
+          valuesType: typeof result.embedding?.values,
+          valuesLength: result.embedding?.values?.length,
+        });
+
+        if (!result.embedding?.values) {
+          throw new Error(`Model ${modelName} returned no embedding values`);
+        }
+
         console.log(`[GEMINI] ✅ Embedding successful with ${modelName}, dimensions:`, result.embedding.values.length);
         return result.embedding.values;
       } catch (error) {
