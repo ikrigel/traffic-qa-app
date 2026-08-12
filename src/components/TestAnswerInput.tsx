@@ -44,7 +44,7 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
     };
   }, []);
 
-  const startListening = () => {
+  const startListening = async () => {
     setVoiceError(null);
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -54,6 +54,19 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
     }
 
     try {
+      console.log('[VOICE] Requesting microphone permission...');
+
+      // Request microphone permission explicitly
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach(track => track.stop());
+        console.log('[VOICE] ✅ Microphone permission granted');
+      } catch (permError) {
+        console.error('[VOICE] ❌ Microphone permission denied:', permError);
+        setVoiceError('🔒 Microphone access denied. Please enable microphone in browser settings.');
+        return;
+      }
+
       console.log('[VOICE] Starting speech recognition...');
       recognitionRef.current = new SpeechRecognition();
       recognitionRef.current.lang = 'he-IL';
@@ -66,7 +79,6 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
         setIsListening(true);
         setVoiceError(null);
 
-        // Set timeout to auto-stop after 30 seconds
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
         timeoutRef.current = setTimeout(() => {
           console.log('[VOICE] ⏱️ Timeout - stopping listening');
@@ -85,7 +97,6 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
         setIsListening(false);
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
-        // Provide specific error messages
         const errorMessages: Record<string, string> = {
           'no-speech': '🔇 No speech detected. Please try again.',
           'audio-capture': '🎤 Microphone not found or permission denied.',
