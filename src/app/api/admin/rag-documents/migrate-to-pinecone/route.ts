@@ -80,6 +80,7 @@ export async function POST(request: NextRequest) {
     // Upsert to Pinecone in batches
     const batchSize = 50;
     let upserted = 0;
+    const upsertErrors: Record<string, string> = {};
 
     console.log(`[MIGRATION] Starting Pinecone upsert:`, {
       totalVectors: vectors.length,
@@ -98,21 +99,31 @@ export async function POST(request: NextRequest) {
         console.log(`[MIGRATION] Upserting batch ${batchNum}/${totalBatches} (${batch.length} vectors)`);
 
         try {
+          const records = batch.map(v => ({
+            id: v.id,
+            values: v.values,
+            metadata: v.metadata || {},
+          }));
+
+          console.log(`[MIGRATION] Batch ${batchNum} record format check:`, {
+            sampleRecord: records[0],
+            vectorLength: records[0]?.values?.length,
+          });
+
           const result = await index.upsert({
-            records: batch.map(v => ({
-              id: v.id,
-              values: v.values,
-              metadata: v.metadata || {},
-            })),
+            records,
           });
 
           upserted += batch.length;
           console.log(`[MIGRATION] ✅ Batch ${batchNum} upserted successfully, result:`, result);
         } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : String(error);
+          upsertErrors[`batch_${batchNum}`] = errorMsg;
           console.error(`[MIGRATION] ❌ Failed to upsert batch ${batchNum}:`, error);
           console.error(`[MIGRATION] Error details:`, {
-            message: error instanceof Error ? error.message : String(error),
+            message: errorMsg,
             name: error instanceof Error ? error.name : 'Unknown',
+            stack: error instanceof Error ? error.stack : 'N/A',
           });
         }
       }
@@ -136,6 +147,10 @@ export async function POST(request: NextRequest) {
 
     if (embeddingErrors > 0) {
       summary.errorDetails = embeddingErrorDetails;
+    }
+
+    if (Object.keys(upsertErrors).length > 0) {
+      summary.upsertErrorDetails = upsertErrors;
     }
 
     if (vectors.length === 0 && documents.length > 0) {
