@@ -54,6 +54,7 @@ export async function POST(request: NextRequest) {
         const errorMsg = error instanceof Error ? error.message : String(error);
         embeddingErrorDetails[doc.id] = errorMsg;
         console.error(`[MIGRATION] Failed to embed ${doc.id}:`, errorMsg);
+        console.error(`[MIGRATION] Full error for ${doc.id}:`, error);
       }
     }
 

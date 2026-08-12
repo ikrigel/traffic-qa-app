@@ -42,6 +42,7 @@ export const embedText = async (text: string): Promise<number[]> => {
 
     const client = getGeminiClient();
     const models = ['text-embedding-004', 'embedding-001'];
+    const errors: Record<string, string> = {};
 
     for (const modelName of models) {
       try {
@@ -52,15 +53,20 @@ export const embedText = async (text: string): Promise<number[]> => {
         return result.embedding.values;
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
+        errors[modelName] = msg;
         console.log(`[GEMINI] ⚠️ Model ${modelName} failed:`, msg);
+        console.log(`[GEMINI] Error details:`, error);
       }
     }
 
-    throw new Error('All embedding models failed');
+    const errorSummary = Object.entries(errors).map(([model, msg]) => `${model}: ${msg}`).join(' | ');
+    const fullError = `All embedding models failed: ${errorSummary}`;
+    console.error('[GEMINI] ❌ All models failed:', errors);
+    throw new Error(fullError);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Embedding failed';
-    console.error('[GEMINI] ❌ Embedding error:', message);
-    await logError({ source: 'gemini.embedText', message });
+    console.error('[GEMINI] ❌ Final embedding error:', message);
+    await logError({ source: 'gemini.embedText', message, context: { errorDetails: String(error) } });
     throw error;
   }
 };
