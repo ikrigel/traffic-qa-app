@@ -39,42 +39,28 @@ export const embedText = async (text: string): Promise<number[]> => {
   try {
     console.log('[GEMINI] ===== embedText called =====');
     console.log('[GEMINI] Text length:', text.length);
-    console.log('[GEMINI] GEMINI_KEY constant value:', !!GEMINI_KEY, GEMINI_KEY ? `(${GEMINI_KEY.length} chars)` : '(undefined)');
 
-    console.log('[GEMINI] Getting client...');
     const client = getGeminiClient();
-    console.log('[GEMINI] Client obtained, getting model...');
+    const models = ['text-embedding-004', 'embedding-001'];
 
-    // Try text-embedding-004 first, fall back to embedding-001
-    let model;
-    let modelName = 'models/text-embedding-004';
-
-    try {
-      console.log('[GEMINI] Trying model: text-embedding-004...');
-      model = client.getGenerativeModel({ model: modelName });
-      const result = await model.embedContent(text);
-      console.log('[GEMINI] ✅ Embedding successful with text-embedding-004, dimensions:', result.embedding.values.length);
-      return result.embedding.values;
-    } catch (error404) {
-      // Try fallback model
-      console.log('[GEMINI] ⚠️ text-embedding-004 failed, trying embedding-001...');
-      modelName = 'models/embedding-001';
+    for (const modelName of models) {
       try {
-        model = client.getGenerativeModel({ model: modelName });
+        console.log(`[GEMINI] Trying model: ${modelName}...`);
+        const model = client.getGenerativeModel({ model: modelName });
         const result = await model.embedContent(text);
-        console.log('[GEMINI] ✅ Embedding successful with embedding-001, dimensions:', result.embedding.values.length);
+        console.log(`[GEMINI] ✅ Embedding successful with ${modelName}, dimensions:`, result.embedding.values.length);
         return result.embedding.values;
-      } catch (fallbackError) {
-        console.error('[GEMINI] ❌ Both embedding models failed');
-        throw fallbackError;
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        console.log(`[GEMINI] ⚠️ Model ${modelName} failed:`, msg);
       }
     }
+
+    throw new Error('All embedding models failed');
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Embedding failed';
     console.error('[GEMINI] ❌ Embedding error:', message);
-    console.error('[GEMINI] Error type:', error?.constructor?.name);
-    console.error('[GEMINI] Full error:', error);
-    await logError({ source: 'gemini.embedText', message, context: { errorType: error?.constructor?.name } });
+    await logError({ source: 'gemini.embedText', message });
     throw error;
   }
 };
