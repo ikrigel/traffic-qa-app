@@ -41,7 +41,12 @@ export const embedText = async (text: string): Promise<number[]> => {
     console.log('[GEMINI] Text length:', text.length);
 
     const client = getGeminiClient();
-    const models = ['text-embedding-004', 'embedding-001'];
+    const models = [
+      'text-embedding-004',
+      'gemini-embedding-001',
+      'gemini-embedding-2',
+      'embedding-001',
+    ];
     const errors: Record<string, string> = {};
 
     for (const modelName of models) {
