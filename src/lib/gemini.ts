@@ -41,12 +41,10 @@ export const embedText = async (text: string): Promise<number[]> => {
     console.log('[GEMINI] Text length:', text.length);
 
     const client = getGeminiClient();
-    // Only use models that return 768 dimensions (Pinecone index expectation)
-    // gemini-embedding-2 returns 3072 dimensions, so exclude it
+    // Use only gemini-embedding-001 which is stable and returns 768 dimensions
+    // text-embedding-004 and embedding-001 not available in current API version
     const models = [
-      'text-embedding-004',     // 768 dimensions
-      'gemini-embedding-001',   // 768 dimensions
-      'embedding-001',          // 768 dimensions (legacy)
+      'gemini-embedding-001',   // 768 dimensions - most stable
     ];
     const errors: Record<string, string> = {};
 
