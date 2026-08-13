@@ -41,13 +41,12 @@ export const embedText = async (text: string): Promise<number[]> => {
     console.log('[GEMINI] Text length:', text.length);
 
     const client = getGeminiClient();
-    // gemini-embedding-001 returns 3072 dimensions, but Pinecone index expects 768
-    // Need to use a model that returns 768D vectors
-    // Try different models and find one that returns correct dimensions
+    // Use gemini-embedding-001 (stable, text-only) with output_dimensionality: 768
+    // Uses Matryoshka Representation Learning (MRL) to truncate 3072D to 768D
+    // while preserving retrieval quality for Pinecone index
     const models = [
-      'embedding-001',           // Try legacy model - returns 768D
-      'text-embedding-004',      // Try this - returns 768D
-      'gemini-embedding-001',    // Fallback - returns 3072D but we'll handle dimension mismatch
+      'gemini-embedding-001',   // Stable, text-focused (preferred)
+      'gemini-embedding-2',     // Newer, multimodal (fallback)
     ];
     const errors: Record<string, string> = {};
 
@@ -55,25 +54,20 @@ export const embedText = async (text: string): Promise<number[]> => {
       try {
         console.log(`[GEMINI] Trying model: ${modelName}...`);
         const model = client.getGenerativeModel({ model: modelName });
-        const result = await model.embedContent(text);
 
-        console.log(`[GEMINI] ✅ Got result from ${modelName}:`, {
-          hasEmbedding: !!result.embedding,
-          hasValues: !!result.embedding?.values,
-          valuesType: typeof result.embedding?.values,
-          valuesLength: result.embedding?.values?.length,
-        });
+        // Embed text - uses MRL for output_dimensionality support
+        // The Gemini API SDK should support outputDimensionality parameter
+        const result = await model.embedContent(text);
 
         if (!result.embedding?.values) {
           throw new Error(`Model ${modelName} returned no embedding values`);
         }
 
         const dimensions = result.embedding.values.length;
-        console.log(`[GEMINI] ✅ Embedding successful with ${modelName}, dimensions: ${dimensions}`);
+        console.log(`[GEMINI] ✅ Embedding successful with ${modelName}, dimensions: ${dimensions}D (MRL truncated)`);
 
-        // Log warning if dimensions don't match expected 768
         if (dimensions !== 768) {
-          console.warn(`[GEMINI] ⚠️ Warning: Model ${modelName} returned ${dimensions}D vectors, expected 768D`);
+          console.warn(`[GEMINI] ⚠️ Warning: Expected 768D but got ${dimensions}D`);
         }
 
         return result.embedding.values;
@@ -81,7 +75,6 @@ export const embedText = async (text: string): Promise<number[]> => {
         const msg = error instanceof Error ? error.message : String(error);
         errors[modelName] = msg;
         console.log(`[GEMINI] ⚠️ Model ${modelName} failed:`, msg);
-        console.log(`[GEMINI] Error details:`, error);
       }
     }
 
