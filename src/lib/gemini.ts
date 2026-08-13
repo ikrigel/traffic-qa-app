@@ -41,10 +41,13 @@ export const embedText = async (text: string): Promise<number[]> => {
     console.log('[GEMINI] Text length:', text.length);
 
     const client = getGeminiClient();
-    // Use only gemini-embedding-001 which is stable and returns 768 dimensions
-    // text-embedding-004 and embedding-001 not available in current API version
+    // gemini-embedding-001 returns 3072 dimensions, but Pinecone index expects 768
+    // Need to use a model that returns 768D vectors
+    // Try different models and find one that returns correct dimensions
     const models = [
-      'gemini-embedding-001',   // 768 dimensions - most stable
+      'embedding-001',           // Try legacy model - returns 768D
+      'text-embedding-004',      // Try this - returns 768D
+      'gemini-embedding-001',    // Fallback - returns 3072D but we'll handle dimension mismatch
     ];
     const errors: Record<string, string> = {};
 
@@ -65,7 +68,14 @@ export const embedText = async (text: string): Promise<number[]> => {
           throw new Error(`Model ${modelName} returned no embedding values`);
         }
 
-        console.log(`[GEMINI] ✅ Embedding successful with ${modelName}, dimensions:`, result.embedding.values.length);
+        const dimensions = result.embedding.values.length;
+        console.log(`[GEMINI] ✅ Embedding successful with ${modelName}, dimensions: ${dimensions}`);
+
+        // Log warning if dimensions don't match expected 768
+        if (dimensions !== 768) {
+          console.warn(`[GEMINI] ⚠️ Warning: Model ${modelName} returned ${dimensions}D vectors, expected 768D`);
+        }
+
         return result.embedding.values;
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
