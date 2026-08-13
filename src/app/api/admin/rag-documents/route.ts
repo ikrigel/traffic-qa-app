@@ -24,15 +24,20 @@ export async function GET(request: NextRequest) {
     const index = getPineconeIndex();
     const vectorIds = new Set<string>();
 
-    // Check which documents have vectors in Pinecone
-    for (const doc of data || []) {
+    // Batch check vectors in Pinecone (more efficient than individual fetches)
+    if (data && data.length > 0) {
       try {
-        const result = await index.fetch({ ids: [doc.id] });
-        if (result.records && result.records[doc.id]) {
-          vectorIds.add(doc.id);
+        const docIds = data.map(d => d.id);
+        const result = await index.fetch({ ids: docIds });
+
+        if (result.records) {
+          Object.keys(result.records).forEach(id => {
+            vectorIds.add(id);
+          });
         }
-      } catch {
-        // Vector not found
+      } catch (error) {
+        console.error('[RAG-GET] Error fetching vectors from Pinecone:', error);
+        // Fall back to empty set - all documents will show as pending
       }
     }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { AuthUser } from '@/hooks/useAuth';
 import UserManagementPanel from './UserManagementPanel';
 import RagDocumentsPanel from './RagDocumentsPanel';
@@ -14,9 +14,25 @@ interface Props {
   user: AuthUser;
 }
 
+const ADMIN_TAB_STORAGE_KEY = 'admin_panel_active_tab';
+
 export default function AdminPanelContainer({ user }: Props) {
   const [activeTab, setActiveTab] = useState<TabType>('users');
   const isSuperAdmin = user.role === 'super_admin';
+
+  // Load saved tab on mount
+  useEffect(() => {
+    const saved = localStorage.getItem(ADMIN_TAB_STORAGE_KEY) as TabType | null;
+    if (saved && ['users', 'rag-docs', 'logs', 'evaluations', 'devkit'].includes(saved)) {
+      setActiveTab(saved);
+    }
+  }, []);
+
+  // Save tab to localStorage when it changes
+  const handleTabChange = (tab: TabType) => {
+    setActiveTab(tab);
+    localStorage.setItem(ADMIN_TAB_STORAGE_KEY, tab);
+  };
 
   const tabs: Array<{ id: TabType; label: string; icon: string; visible: boolean }> = [
     { id: 'users', label: 'Users', icon: '👥', visible: true },
@@ -36,7 +52,7 @@ export default function AdminPanelContainer({ user }: Props) {
             .map(tab => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => handleTabChange(tab.id)}
                 className={`flex-1 px-4 py-3 text-center font-semibold transition ${
                   activeTab === tab.id
                     ? 'bg-indigo-600 text-white border-b-2 border-indigo-700'
