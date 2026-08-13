@@ -9,7 +9,7 @@ A responsive React-based Q&A application for studying Israeli traffic laws (די
 - **Authentication**: Gmail OAuth with persistent session management and JWT-hardened tokens
 - **Role-Based Access Control**: User (default), Admin (moderation + debugging), Super Admin (full control)
 - **Admin Panel**: User management, RAG document ingestion, debug log viewing, RAGAS evaluation testing
-- **RAG-Grounded AI Chat Assistant**: Free Gemini API integration with Supabase pgvector for document retrieval
+- **RAG-Grounded AI Chat Assistant**: Gemini embeddings with Pinecone vector DB for fast, scalable document retrieval
 - **AI-Graded Testing**: Users answer questions via typed or voice input; instant feedback via RAGAS evaluation metrics
 - **Theme Support**: Dark, Light, and Auto (system) modes
 - **Responsive Design**: Mobile-first, works on all screen sizes
@@ -21,8 +21,9 @@ A responsive React-based Q&A application for studying Israeli traffic laws (די
 - **Frontend**: React 18 + TypeScript + Next.js 14
 - **Styling**: Tailwind CSS
 - **Auth**: Google OAuth (Gmail) + JWT session tokens (jsonwebtoken)
-- **Database**: Supabase (PostgreSQL) with pgvector extension for embeddings
-- **AI**: Google Gemini API (text-embedding-004 + gemini-1.5-flash)
+- **Database**: Supabase (PostgreSQL) for users, sessions, documents
+- **Vector DB**: Pinecone for RAG embeddings and similarity search (768D vectors)
+- **AI**: Google Gemini API (gemini-embedding-001 for vectors, generation via multi-provider)
 - **Evaluation**: RAGAS engine (@ikrigel/ragas-lib-typescript) for answer grading
 - **Deployment**: Vercel with GitHub Actions
 - **Testing**: Vitest + React Testing Library
@@ -87,6 +88,7 @@ traffic-qa-app/
 │   │   ├── logger.ts (50 lines max)
 │   │   ├── geo.ts (50 lines max)
 │   │   ├── gemini.ts (60 lines max)
+│   │   ├── pinecone.ts (50 lines max)
 │   │   ├── rag.ts (50 lines max)
 │   │   ├── ragasClient.ts (60 lines max)
 │   │   ├── grading.ts (70 lines max)
@@ -519,7 +521,7 @@ Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>"
 
 ## Current Implementation Status
 
-### ✅ Fully Implemented (v1.2.1)
+### ✅ Fully Implemented (v1.13.0)
 
 **Authentication & Security:**
 - ✅ Gmail OAuth authentication with Google consent flow
@@ -546,17 +548,22 @@ Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>"
 - ✅ Answer Grading: RAGAS evaluation with metrics and Hebrew feedback
 - ✅ Test History: admin can see all user test attempts with verdicts
 
-**Infrastructure:**
-- ✅ Supabase database with pgvector for embeddings
-- ✅ Google Gemini API: text-embedding-004 (vectors) + gemini-1.5-flash (generation)
+**Infrastructure (v1.13.0):**
+- ✅ Supabase database (PostgreSQL) for users, sessions, documents
+- ✅ **Pinecone vector database** for RAG embeddings (768D vectors, fast similarity search)
+- ✅ Google Gemini API: gemini-embedding-001 (768D vectors), multi-provider generation fallback
 - ✅ RAGAS evaluation engine with 5 metrics (Faithfulness, Relevance, Coherence, Context Precision/Recall)
 - ✅ Server-side debug logging with context capture
 - ✅ JWT session verification with fresh role lookup on every request
+- ✅ Voice-to-text with Web Speech API (Hebrew support, explicit microphone permission)
+- ✅ Admin panel tab memory (localStorage persistence across page refresh)
 
-**Testing (v1.2.1):**
+**Testing (v1.13.0):**
 - ✅ Admin operations tests (user mgmt, RAG docs, logging, test tracking)
 - ✅ Chat assistant tests (message structure, validation, XSS protection)
 - ✅ Answer grading tests (verdicts, metrics, voice input, Hebrew support)
+- ✅ Pinecone connection tests (query, upsert, delete operations)
+- ✅ RAG pipeline tests (embedding, retrieval, generation)
 
 **Documentation:**
 - ✅ CLAUDE.md with complete architecture and troubleshooting
