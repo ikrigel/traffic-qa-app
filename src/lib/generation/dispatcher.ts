@@ -37,9 +37,13 @@ export async function generateWithFallback(
     const model = client.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     const fullPrompt = systemPrompt ? `${systemPrompt}\n\n${userPrompt}` : userPrompt;
-    const response = await model.generateContent(fullPrompt);
+    const response = await model.generateContent({
+      contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
+    });
 
-    const text = response.response.text?.();
+    const textContent = response.response.candidates?.[0]?.content?.parts?.[0] as { text?: string } | undefined;
+    const text = textContent?.text;
+
     if (!text || !text.trim()) {
       throw new Error('Empty response from Gemini');
     }
