@@ -1,11 +1,10 @@
-import type { AIProvider } from '@/types';
-import type { ProviderErrorCode } from '@/lib/providers';
+export type AIProvider = 'gemini' | 'groq' | 'openai' | 'huggingface';
 
 export interface AttemptLog {
   provider: AIProvider;
   source: 'user' | 'admin';
   keyId?: string;
-  errorCode?: ProviderErrorCode;
+  errorCode?: string;
   errorMessage?: string;
 }
 
