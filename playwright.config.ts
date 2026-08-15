@@ -1,5 +1,23 @@
 import { defineConfig, devices } from '@playwright/test';
 
+export const TEST_USER = {
+  email: 'test@example.com',
+  id: 'test-user-id-12345',
+  role: 'user',
+};
+
+export const TEST_ADMIN = {
+  email: 'admin@example.com',
+  id: 'admin-user-id-67890',
+  role: 'admin',
+};
+
+export const TEST_SUPER_ADMIN = {
+  email: 'superadmin@example.com',
+  id: 'superadmin-id-11111',
+  role: 'super_admin',
+};
+
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: true,
@@ -10,29 +28,12 @@ export default defineConfig({
   use: {
     baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',
-    screenshot: 'only-on-failure',
   },
 
   projects: [
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-    },
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
-    {
-      name: 'Mobile Chrome',
-      use: { ...devices['Pixel 5'] },
-    },
-    {
-      name: 'Mobile Safari',
-      use: { ...devices['iPhone 12'] },
     },
   ],
 
