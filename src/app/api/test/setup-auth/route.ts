@@ -59,14 +59,26 @@ export async function POST(request: NextRequest) {
 
       if (insertError) {
         console.error(`[TEST-AUTH] Failed to create user:`, insertError);
-        return NextResponse.json({ error: 'Failed to create test user' }, { status: 500 });
+        return NextResponse.json(
+          { error: `Failed to create test user: ${insertError.message}` },
+          { status: 500 }
+        );
       }
     } else if (existingUser.id !== id) {
       // Update role if user exists with different ID
-      await supabase
+      console.log(`[TEST-AUTH] Updating existing user: ${email}`);
+      const { error: updateError } = await supabase
         .from('users')
-        .update({ id, role })
+        .update({ role })
         .eq('email', email);
+
+      if (updateError) {
+        console.error(`[TEST-AUTH] Failed to update user:`, updateError);
+        return NextResponse.json(
+          { error: `Failed to update test user: ${updateError.message}` },
+          { status: 500 }
+        );
+      }
     }
 
     // Create JWT token

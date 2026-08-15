@@ -1,20 +1,20 @@
 import { defineConfig, devices } from '@playwright/test';
 
 export const TEST_USER = {
-  email: 'test@example.com',
-  id: 'test-user-id-12345',
+  email: 'test-user@example.com',
+  id: '12345678-1234-1234-1234-123456789012',
   role: 'user',
 };
 
 export const TEST_ADMIN = {
-  email: 'admin@example.com',
-  id: 'admin-user-id-67890',
+  email: 'test-admin@example.com',
+  id: '87654321-4321-4321-4321-210987654321',
   role: 'admin',
 };
 
 export const TEST_SUPER_ADMIN = {
-  email: 'superadmin@example.com',
-  id: 'superadmin-id-11111',
+  email: 'test-superadmin@example.com',
+  id: '11111111-2222-3333-4444-555555555555',
   role: 'super_admin',
 };
 
