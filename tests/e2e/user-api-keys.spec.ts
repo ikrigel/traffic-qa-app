@@ -73,15 +73,15 @@ test.describe('User API Keys Management', () => {
     await page.getByRole('button', { name: /⚙️/i }).click();
 
     // Select provider (default is Groq)
-    const providerInput = page.getByRole('button', { name: /⚡ Groq/ });
-    await providerInput.click();
+    const groqButton = page.locator('button').filter({ hasText: /⚡ Groq/ }).first();
+    await groqButton.click();
 
     // Enter display name
-    const displayNameInput = page.locator('input[placeholder*="e.g., My"]');
+    const displayNameInput = page.locator('input[placeholder*="e.g., My"]').first();
     await displayNameInput.fill('My Test Groq Key');
 
     // Enter API key
-    const apiKeyInput = page.locator('input[type="password"]');
+    const apiKeyInput = page.locator('input[type="password"]').first();
     await apiKeyInput.fill('test-api-key-12345');
 
     // Submit form
@@ -89,11 +89,11 @@ test.describe('User API Keys Management', () => {
     await submitButton.click();
 
     // Wait for success message
-    const successMessage = page.locator('text=/✅.*successfully/i');
+    const successMessage = page.locator('text=/✅.*successfully/i').first();
     await expect(successMessage).toBeVisible({ timeout: 5000 });
 
     // Verify the key appears in the list
-    const keyName = page.locator('text=My Test Groq Key');
+    const keyName = page.locator('text=My Test Groq Key').first();
     await expect(keyName).toBeVisible({ timeout: 5000 });
   });
 
@@ -102,7 +102,7 @@ test.describe('User API Keys Management', () => {
     await page.getByRole('button', { name: /⚙️/i }).click();
 
     // Check if API keys list is visible (either with existing keys or empty state)
-    const listSection = page.locator('text=/🔑 Your API Keys|No API Keys Added/i');
+    const listSection = page.locator('text=/🔑 Your API Keys|No API Keys Added/i').first();
     await expect(listSection).toBeVisible();
   });
 
@@ -111,7 +111,7 @@ test.describe('User API Keys Management', () => {
     await page.getByRole('button', { name: /⚙️/i }).click();
 
     // Add first key
-    const apiKeyInput = page.locator('input[type="password"]');
+    const apiKeyInput = page.locator('input[type="password"]').first();
     await apiKeyInput.fill('first-test-key');
 
     const submitButton = page.getByRole('button', { name: /Add API Key/i });
@@ -121,7 +121,7 @@ test.describe('User API Keys Management', () => {
     await page.waitForTimeout(1000);
 
     // Add second key with different provider
-    const geminiButton = page.getByRole('button', { name: /🔮 Google Gemini/ });
+    const geminiButton = page.getByRole('button', { name: /🔮 Google Gemini/ }).first();
     await geminiButton.click();
 
     await apiKeyInput.fill('second-test-key');
@@ -138,7 +138,7 @@ test.describe('User API Keys Management', () => {
       await firstSetDefaultButton.click();
 
       // Verify success message
-      const successMessage = page.locator('text=/✅.*Default key updated/i');
+      const successMessage = page.locator('text=/✅.*Default key updated/i').first();
       await expect(successMessage).toBeVisible({ timeout: 5000 });
     }
   });
@@ -148,7 +148,7 @@ test.describe('User API Keys Management', () => {
     await page.getByRole('button', { name: /⚙️/i }).click();
 
     // Add a key first
-    const apiKeyInput = page.locator('input[type="password"]');
+    const apiKeyInput = page.locator('input[type="password"]').first();
     await apiKeyInput.fill('temp-test-key');
 
     const submitButton = page.getByRole('button', { name: /Add API Key/i });
@@ -171,7 +171,7 @@ test.describe('User API Keys Management', () => {
     await page.waitForTimeout(500);
 
     // Verify success message
-    const successMessage = page.locator('text=/✅.*deleted/i');
+    const successMessage = page.locator('text=/✅.*deleted/i').first();
     await expect(successMessage).toBeVisible({ timeout: 5000 });
   });
 
@@ -179,7 +179,7 @@ test.describe('User API Keys Management', () => {
     // Open settings
     await page.getByRole('button', { name: /⚙️/i }).click();
 
-    const apiKeyInput = page.locator('input[type="password"]');
+    const apiKeyInput = page.locator('input[type="password"]').first();
     const submitButton = page.getByRole('button', { name: /Add API Key/i });
 
     // Add first key
@@ -187,14 +187,14 @@ test.describe('User API Keys Management', () => {
     await submitButton.click();
 
     // Wait for success
-    await page.locator('text=/✅.*successfully/i').waitFor({ timeout: 5000 });
+    await page.locator('text=/✅.*successfully/i').first().waitFor({ timeout: 5000 });
 
     // Try to add same key again
     await apiKeyInput.fill('duplicate-test-key');
     await submitButton.click();
 
     // Should show error
-    const errorMessage = page.locator('text=/❌.*already in use/i');
+    const errorMessage = page.locator('text=/❌.*already in use/i').first();
     await expect(errorMessage).toBeVisible({ timeout: 5000 });
   });
 
@@ -203,8 +203,8 @@ test.describe('User API Keys Management', () => {
     await page.getByRole('button', { name: /⚙️/i }).click();
 
     // Add a key
-    const apiKeyInput = page.locator('input[type="password"]');
-    const displayNameInput = page.locator('input[placeholder*="e.g., My"]');
+    const apiKeyInput = page.locator('input[type="password"]').first();
+    const displayNameInput = page.locator('input[placeholder*="e.g., My"]').first();
     const submitButton = page.getByRole('button', { name: /Add API Key/i });
 
     await displayNameInput.fill('Test Provider Key');
@@ -214,8 +214,8 @@ test.describe('User API Keys Management', () => {
     // Wait for key to appear
     await page.waitForTimeout(1000);
 
-    // Check that provider is displayed
-    const providerText = page.locator('text=Provider: groq');
+    // Check that provider is displayed - use first() to avoid strict mode violation
+    const providerText = page.locator('text=Provider: groq').first();
     await expect(providerText).toBeVisible({ timeout: 5000 });
   });
 
@@ -260,14 +260,14 @@ test.describe('User API Keys Management', () => {
     // Open settings and add a key
     await page.getByRole('button', { name: /⚙️/i }).click();
 
-    const apiKeyInput = page.locator('input[type="password"]');
+    const apiKeyInput = page.locator('input[type="password"]').first();
     const submitButton = page.getByRole('button', { name: /Add API Key/i });
 
     await apiKeyInput.fill('persist-test-key');
     await submitButton.click();
 
     // Wait for success
-    await page.locator('text=/✅.*successfully/i').waitFor({ timeout: 5000 });
+    await page.locator('text=/✅.*successfully/i').first().waitFor({ timeout: 5000 });
 
     // Close modal
     const closeButton = page.locator('button').filter({ hasText: '✕' }).first();
