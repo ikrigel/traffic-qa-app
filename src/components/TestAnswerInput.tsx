@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import MicrophonePermissionGuide from './MicrophonePermissionGuide';
 
 interface TestResult {
   verdict: 'correct' | 'partial' | 'incorrect';
@@ -21,6 +22,7 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
   const [loading, setLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [voiceError, setVoiceError] = useState<string | null>(null);
+  const [showPermissionGuide, setShowPermissionGuide] = useState(false);
   const recognitionRef = useRef<any>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [inputMethod, setInputMethod] = useState<'typed' | 'voice'>('typed');
@@ -64,7 +66,10 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
         console.log('[VOICE] ✅ Microphone permission granted via getUserMedia');
       } catch (permError) {
         console.log('[VOICE] ⚠️ getUserMedia permission denied, will use Speech Recognition permission:', permError);
-        // Continue anyway - Speech Recognition will request its own permission
+        // Show the permission guide to help user grant permission
+        setShowPermissionGuide(true);
+        setVoiceError('Please grant microphone permission in your browser settings.');
+        return;
       }
 
       console.log('[VOICE] Starting speech recognition...');
@@ -301,6 +306,16 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
           </button>
         </div>
       )}
+
+      <MicrophonePermissionGuide
+        isOpen={showPermissionGuide}
+        onClose={() => setShowPermissionGuide(false)}
+        onRetry={() => {
+          setShowPermissionGuide(false);
+          setVoiceError(null);
+          startListening();
+        }}
+      />
     </div>
   );
 }
