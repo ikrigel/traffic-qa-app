@@ -48,6 +48,7 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
 
   const startListening = async () => {
     setVoiceError(null);
+    setShowPermissionGuide(false);
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       setVoiceError('Speech recognition not supported');
@@ -56,22 +57,6 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
     }
 
     try {
-      console.log('[VOICE] Requesting microphone permission...');
-
-      // Try to request microphone permission explicitly, but don't fail if it doesn't work
-      // Speech Recognition has its own permission handling
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        stream.getTracks().forEach(track => track.stop());
-        console.log('[VOICE] ✅ Microphone permission granted via getUserMedia');
-      } catch (permError) {
-        console.log('[VOICE] ⚠️ getUserMedia permission denied, will use Speech Recognition permission:', permError);
-        // Show the permission guide to help user grant permission
-        setShowPermissionGuide(true);
-        setVoiceError('Please grant microphone permission in your browser settings.');
-        return;
-      }
-
       console.log('[VOICE] Starting speech recognition...');
       recognitionRef.current = new SpeechRecognition();
       recognitionRef.current.lang = 'he-IL';
@@ -102,6 +87,9 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
         setIsListening(false);
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
+        const permissionErrors = ['permission-denied', 'not-allowed', 'network-error'];
+        const isPermissionError = permissionErrors.includes(event.error);
+
         const errorMessages: Record<string, string> = {
           'no-speech': '🔇 No speech detected. Please try again.',
           'audio-capture': '🎤 Microphone not found or permission denied.',
@@ -113,6 +101,11 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
 
         const errorMsg = errorMessages[event.error] || `Voice input error: ${event.error}`;
         setVoiceError(errorMsg);
+
+        if (isPermissionError) {
+          setShowPermissionGuide(true);
+        }
+
         console.error('[VOICE] Error message:', errorMsg);
       };
 
