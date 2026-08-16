@@ -87,7 +87,15 @@ export async function generateWithFallback(
     const msg = error instanceof Error ? error.message : String(error);
     const fullError = error instanceof Error ? error.stack : String(error);
     console.error('[GENERATION] ❌ Generation failed:', msg);
-    console.error('[GENERATION] Full error:', fullError);
+    console.error('[GENERATION] Full error stack:', fullError);
+    console.error('[GENERATION] Error object:', error);
+
+    // Try to extract more details from the error
+    let errorDetails = '';
+    if (error instanceof Error && 'cause' in error) {
+      errorDetails = String((error as any).cause);
+      console.error('[GENERATION] Error cause:', errorDetails);
+    }
 
     attempts.push({
       provider: 'gemini',
@@ -98,10 +106,14 @@ export async function generateWithFallback(
     await logError({
       source: 'generation/dispatcher',
       message: `Generation failed: ${msg}`,
+      level: 'error',
       context: {
         operation,
         fullError: fullError,
+        errorDetails: errorDetails,
         apiKeyExists: !!apiKey,
+        apiKeyLength: apiKey?.length || 0,
+        geminiModelUsed: 'gemini-1.5-flash',
       },
     });
 

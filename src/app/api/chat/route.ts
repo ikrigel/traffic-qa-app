@@ -38,10 +38,16 @@ export async function POST(request: NextRequest) {
     const result = await generateWithFallback(user.id, systemPrompt, message, 'generation');
 
     if (!result.ok) {
+      const firstError = result.attempts[0];
       const errorDetails = {
         code: result.code,
         attemptCount: result.attempts.length,
-        attempts: result.attempts.map(a => ({
+        firstAttempt: {
+          provider: firstError?.provider,
+          source: firstError?.source,
+          error: firstError?.errorMessage,
+        },
+        allAttempts: result.attempts.map(a => ({
           provider: a.provider,
           source: a.source,
           error: a.errorMessage,
@@ -53,7 +59,8 @@ export async function POST(request: NextRequest) {
         level: 'error',
         context: errorDetails,
       });
-      return apiError(result.code, `Failed to generate answer: ${result.attempts[0]?.errorMessage || result.code}`, 502);
+      console.error('[CHAT-ROUTE] Generation failed:', errorDetails);
+      return apiError(result.code, `Failed to generate answer: ${firstError?.errorMessage || result.code}`, 502);
     }
 
     await appLog({ source: 'chat/route', message: `✅ Generated response via ${result.provider}`, context: { keySource: result.keySource } });
