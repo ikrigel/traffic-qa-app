@@ -14,10 +14,9 @@ export async function generateWithFallback(
   let apiKey: string | undefined;
 
   try {
-    // Use Gemini for generation (simplest working path)
-    console.log('[GENERATION] Attempting to generate with Gemini');
+    // Use Gemini API v1 directly (SDK v1beta doesn't have the models)
+    console.log('[GENERATION] Attempting to generate with Gemini API v1');
 
-    const { GoogleGenerativeAI } = await import('@google/generative-ai');
     apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
@@ -34,20 +33,29 @@ export async function generateWithFallback(
       };
     }
 
-    const client = new GoogleGenerativeAI(apiKey);
-    // Use gemini-pro which is stable and available in v1beta
-    // gemini-1.5-flash requires v1 API which SDK doesn't expose yet
-    const model = client.getGenerativeModel({ model: 'gemini-pro' });
-
     const fullPrompt = systemPrompt ? `${systemPrompt}\n\n${userPrompt}` : userPrompt;
-    console.log('[GENERATION] Calling Gemini API with prompt length:', fullPrompt.length);
+    console.log('[GENERATION] Calling Gemini API v1 with prompt length:', fullPrompt.length);
+
+    const model = 'gemini-1.5-flash';
+    const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`;
 
     let response;
     try {
-      response = await model.generateContent({
-        contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
+      const fetchResponse = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
+        }),
       });
-      console.log('[GENERATION] Gemini response received, status:', response.response.promptFeedback?.blockReason);
+
+      if (!fetchResponse.ok) {
+        const errorText = await fetchResponse.text();
+        throw new Error(`API returned ${fetchResponse.status}: ${errorText}`);
+      }
+
+      response = await fetchResponse.json();
+      console.log('[GENERATION] Gemini response received');
     } catch (apiError) {
       const apiMsg = apiError instanceof Error ? apiError.message : String(apiError);
       const apiStack = apiError instanceof Error ? apiError.stack : '';
@@ -57,17 +65,14 @@ export async function generateWithFallback(
     }
 
     console.log('[GENERATION] Response structure:', {
-      hasResponse: !!response.response,
-      blockReason: response.response.promptFeedback?.blockReason,
-      candidatesCount: response.response.candidates?.length,
-      firstCandidateStatus: response.response.candidates?.[0]?.finishReason,
+      hasContent: !!response.candidates?.[0]?.content,
+      partsCount: response.candidates?.[0]?.content?.parts?.length,
     });
 
-    const textContent = response.response.candidates?.[0]?.content?.parts?.[0] as { text?: string } | undefined;
-    const text = textContent?.text;
+    const text = response.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!text || !text.trim()) {
-      console.error('[GENERATION] Empty response from Gemini - full response structure:', JSON.stringify(response.response, null, 2));
+      console.error('[GENERATION] Empty response from Gemini - full response:', JSON.stringify(response, null, 2));
       throw new Error('Empty response from Gemini');
     }
 
@@ -115,7 +120,8 @@ export async function generateWithFallback(
         errorDetails: errorDetails,
         apiKeyExists: !!apiKey,
         apiKeyLength: apiKey?.length || 0,
-        geminiModelUsed: 'gemini-pro',
+        geminiModelUsed: 'gemini-1.5-flash',
+        apiVersion: 'v1',
       },
     });
 
