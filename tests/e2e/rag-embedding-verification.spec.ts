@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { loginAsUser } from '../fixtures/auth';
 import fs from 'fs';
 import path from 'path';
 
@@ -6,6 +7,9 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
 test.describe('RAG Document Embedding Verification', () => {
   test.beforeEach(async ({ page }) => {
+    // Login as super_admin for admin access
+    await loginAsUser(page, 'super_admin');
+
     // Navigate to home page
     await page.goto(`${APP_URL}/`);
     await page.waitForLoadState('networkidle');
