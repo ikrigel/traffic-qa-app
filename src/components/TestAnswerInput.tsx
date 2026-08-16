@@ -46,9 +46,12 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
     };
   }, []);
 
+  useEffect(() => {
+    console.log('[VOICE] Permission guide state changed:', { showPermissionGuide, voiceError });
+  }, [showPermissionGuide, voiceError]);
+
   const startListening = async () => {
     setVoiceError(null);
-    setShowPermissionGuide(false);
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       setVoiceError('Speech recognition not supported');
@@ -103,7 +106,10 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
         setVoiceError(errorMsg);
 
         if (isPermissionError) {
+          console.error('[VOICE] 📖 Showing permission guide for error:', event.error);
           setShowPermissionGuide(true);
+        } else {
+          console.error('[VOICE] Not a permission error, guide will not show');
         }
 
         console.error('[VOICE] Error message:', errorMsg);
