@@ -11,13 +11,14 @@ export async function generateWithFallback(
   console.log(`[GENERATION] Starting ${operation} for user ${userId}`);
 
   const attempts: AttemptLog[] = [];
+  let apiKey: string | undefined;
 
   try {
     // Use Gemini for generation (simplest working path)
     console.log('[GENERATION] Attempting to generate with Gemini');
 
     const { GoogleGenerativeAI } = await import('@google/generative-ai');
-    const apiKey = process.env.GEMINI_API_KEY;
+    apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
       console.error('[GENERATION] No GEMINI_API_KEY found');
