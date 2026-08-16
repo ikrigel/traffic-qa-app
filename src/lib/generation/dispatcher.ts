@@ -35,7 +35,9 @@ export async function generateWithFallback(
     }
 
     const client = new GoogleGenerativeAI(apiKey);
-    const model = client.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    // Use gemini-pro which is stable and available in v1beta
+    // gemini-1.5-flash requires v1 API which SDK doesn't expose yet
+    const model = client.getGenerativeModel({ model: 'gemini-pro' });
 
     const fullPrompt = systemPrompt ? `${systemPrompt}\n\n${userPrompt}` : userPrompt;
     console.log('[GENERATION] Calling Gemini API with prompt length:', fullPrompt.length);
@@ -113,7 +115,7 @@ export async function generateWithFallback(
         errorDetails: errorDetails,
         apiKeyExists: !!apiKey,
         apiKeyLength: apiKey?.length || 0,
-        geminiModelUsed: 'gemini-1.5-flash',
+        geminiModelUsed: 'gemini-pro',
       },
     });
 
