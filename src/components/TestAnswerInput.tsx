@@ -56,15 +56,15 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
     try {
       console.log('[VOICE] Requesting microphone permission...');
 
-      // Request microphone permission explicitly
+      // Try to request microphone permission explicitly, but don't fail if it doesn't work
+      // Speech Recognition has its own permission handling
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         stream.getTracks().forEach(track => track.stop());
-        console.log('[VOICE] ✅ Microphone permission granted');
+        console.log('[VOICE] ✅ Microphone permission granted via getUserMedia');
       } catch (permError) {
-        console.error('[VOICE] ❌ Microphone permission denied:', permError);
-        setVoiceError('🔒 Microphone access denied. Please enable microphone in browser settings.');
-        return;
+        console.log('[VOICE] ⚠️ getUserMedia permission denied, will use Speech Recognition permission:', permError);
+        // Continue anyway - Speech Recognition will request its own permission
       }
 
       console.log('[VOICE] Starting speech recognition...');
