@@ -45,18 +45,27 @@ export async function generateWithFallback(
       response = await model.generateContent({
         contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
       });
-      console.log('[GENERATION] Gemini response received');
+      console.log('[GENERATION] Gemini response received, status:', response.response.promptFeedback?.blockReason);
     } catch (apiError) {
       const apiMsg = apiError instanceof Error ? apiError.message : String(apiError);
+      const apiStack = apiError instanceof Error ? apiError.stack : '';
       console.error('[GENERATION] Gemini API error:', apiMsg);
+      console.error('[GENERATION] Stack:', apiStack);
       throw new Error(`Gemini API error: ${apiMsg}`);
     }
+
+    console.log('[GENERATION] Response structure:', {
+      hasResponse: !!response.response,
+      blockReason: response.response.promptFeedback?.blockReason,
+      candidatesCount: response.response.candidates?.length,
+      firstCandidateStatus: response.response.candidates?.[0]?.finishReason,
+    });
 
     const textContent = response.response.candidates?.[0]?.content?.parts?.[0] as { text?: string } | undefined;
     const text = textContent?.text;
 
     if (!text || !text.trim()) {
-      console.error('[GENERATION] Empty response from Gemini - response structure:', JSON.stringify(response.response));
+      console.error('[GENERATION] Empty response from Gemini - full response structure:', JSON.stringify(response.response, null, 2));
       throw new Error('Empty response from Gemini');
     }
 

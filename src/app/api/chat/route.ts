@@ -38,10 +38,22 @@ export async function POST(request: NextRequest) {
     const result = await generateWithFallback(user.id, systemPrompt, message, 'generation');
 
     if (!result.ok) {
-      await logError({ source: 'chat/route', message: `Generation failed: ${result.code}`, level: 'error' });
-      return apiError(result.code, 'Failed to generate answer', 502, {
+      const errorDetails = {
         code: result.code,
+        attemptCount: result.attempts.length,
+        attempts: result.attempts.map(a => ({
+          provider: a.provider,
+          source: a.source,
+          error: a.errorMessage,
+        })),
+      };
+      await logError({
+        source: 'chat/route',
+        message: `Generation failed: ${result.code}`,
+        level: 'error',
+        context: errorDetails,
       });
+      return apiError(result.code, `Failed to generate answer: ${result.attempts[0]?.errorMessage || result.code}`, 502);
     }
 
     await appLog({ source: 'chat/route', message: `✅ Generated response via ${result.provider}`, context: { keySource: result.keySource } });

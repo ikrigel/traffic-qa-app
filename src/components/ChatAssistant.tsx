@@ -18,6 +18,7 @@ export default function ChatAssistant() {
     if (!input.trim()) return;
 
     const userMessage: Message = { role: 'user', content: input };
+    const messageToSend = input;
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setLoading(true);
@@ -27,7 +28,7 @@ export default function ChatAssistant() {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: input }),
+        body: JSON.stringify({ message: messageToSend }),
       });
 
       if (!response.ok) {
@@ -46,16 +47,22 @@ export default function ChatAssistant() {
     } catch (error) {
       let content = 'Sorry, I encountered an error. Please try again.';
 
-      const errorCode = (error as any).errorData?.error?.code;
+      const errorData = (error as any).errorData?.error;
+      const errorCode = errorData?.code;
+      const errorMsg = errorData?.message;
+
+      console.error('[CHAT] Error response:', { errorCode, errorMsg, fullError: error });
 
       if (errorCode === 'NO_API_KEY') {
         content = '🔑 You need to add an API key to use the chat assistant! Click the ⚙️ Settings button at the top and add your API key from Groq, Gemini, OpenAI, or HuggingFace.';
       } else if (errorCode === 'ALL_KEYS_FAILED') {
-        content = '⚠️ All your API keys failed. Please check your keys in Settings or add a new one.';
+        content = `⚠️ All your API keys failed: ${errorMsg || 'Please check your keys in Settings or add a new one.'}`;
       } else {
         const errorText = error instanceof Error ? error.message : '';
         if (errorText.includes('API key') || errorText.includes('No API key')) {
           content = '🔑 You need to add an API key to use the chat assistant! Click the ⚙️ Settings button at the top and add your API key.';
+        } else if (errorMsg) {
+          content = `Error: ${errorMsg}`;
         }
       }
 
