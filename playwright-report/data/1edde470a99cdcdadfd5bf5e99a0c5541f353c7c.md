@@ -6,8 +6,8 @@
 
 # Test info
 
-- Name: chat.spec.ts >> Chat Assistant >> should send message and receive response
-- Location: tests\e2e\chat.spec.ts:34:7
+- Name: admin-evaluations.spec.ts >> Admin Evaluations Panel >> should navigate to admin panel
+- Location: tests\e2e\admin-evaluations.spec.ts:13:7
 
 # Error details
 

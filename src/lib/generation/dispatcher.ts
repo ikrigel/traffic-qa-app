@@ -37,14 +37,25 @@ export async function generateWithFallback(
     const model = client.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     const fullPrompt = systemPrompt ? `${systemPrompt}\n\n${userPrompt}` : userPrompt;
-    const response = await model.generateContent({
-      contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
-    });
+    console.log('[GENERATION] Calling Gemini API with prompt length:', fullPrompt.length);
+
+    let response;
+    try {
+      response = await model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
+      });
+      console.log('[GENERATION] Gemini response received');
+    } catch (apiError) {
+      const apiMsg = apiError instanceof Error ? apiError.message : String(apiError);
+      console.error('[GENERATION] Gemini API error:', apiMsg);
+      throw new Error(`Gemini API error: ${apiMsg}`);
+    }
 
     const textContent = response.response.candidates?.[0]?.content?.parts?.[0] as { text?: string } | undefined;
     const text = textContent?.text;
 
     if (!text || !text.trim()) {
+      console.error('[GENERATION] Empty response from Gemini - response structure:', JSON.stringify(response.response));
       throw new Error('Empty response from Gemini');
     }
 
@@ -64,7 +75,9 @@ export async function generateWithFallback(
     };
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
+    const fullError = error instanceof Error ? error.stack : String(error);
     console.error('[GENERATION] ❌ Generation failed:', msg);
+    console.error('[GENERATION] Full error:', fullError);
 
     attempts.push({
       provider: 'gemini',
@@ -75,7 +88,11 @@ export async function generateWithFallback(
     await logError({
       source: 'generation/dispatcher',
       message: `Generation failed: ${msg}`,
-      context: { operation },
+      context: {
+        operation,
+        fullError: fullError,
+        apiKeyExists: !!apiKey,
+      },
     });
 
     return {
