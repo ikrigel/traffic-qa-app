@@ -5,16 +5,6 @@ import { SignJWT } from 'jose';
 
 export const dynamic = 'force-dynamic';
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const JWT_SECRET = process.env.JWT_SECRET;
-
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !JWT_SECRET) {
-  throw new Error('Missing required environment variables for test auth setup');
-}
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
 interface TestUser {
   email: string;
   id: string;
@@ -28,6 +18,19 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const JWT_SECRET = process.env.JWT_SECRET;
+
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !JWT_SECRET) {
+      return NextResponse.json(
+        { error: 'Missing required environment variables for test auth setup' },
+        { status: 500 }
+      );
+    }
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
     const body = await request.json() as TestUser;
     const { email, id, role } = body;
 
