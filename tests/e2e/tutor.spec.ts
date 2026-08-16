@@ -1,7 +1,11 @@
 import { test, expect } from '@playwright/test';
+import { loginAsUser } from '../fixtures/auth';
 
 test.describe('Driving Tutor RAG System - Acceptance Tests', () => {
   test.beforeEach(async ({ page }) => {
+    // Login as test user
+    await loginAsUser(page, 'user');
+
     // Navigate to tutor page
     await page.goto('/tutor');
     // Wait for page to load

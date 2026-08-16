@@ -1,20 +1,10 @@
 import { test, expect } from '@playwright/test';
+import { loginAsUser } from '../fixtures/auth';
 
 test.describe('Voice Input Feature', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await page.context().addCookies([
-      {
-        name: 'auth_token',
-        value: 'test_token_for_e2e_testing',
-        domain: 'localhost',
-        path: '/',
-        httpOnly: true,
-        secure: false,
-        sameSite: 'Lax',
-      },
-    ]);
-    await page.reload();
+    // Login as test user
+    await loginAsUser(page, 'user');
   });
 
   test('should detect voice support and show button on Chrome', async ({ page, browserName }) => {

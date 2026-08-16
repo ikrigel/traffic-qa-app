@@ -1,20 +1,13 @@
 import { test, expect } from '@playwright/test';
+import { loginAsUser } from '../fixtures/auth';
 
 test.describe('Answer Grading Error Handling', () => {
   test.beforeEach(async ({ page }) => {
+    // Login as test user
+    await loginAsUser(page, 'user');
+
+    // Navigate to home
     await page.goto('/');
-    await page.context().addCookies([
-      {
-        name: 'auth_token',
-        value: 'test_token_for_e2e_testing',
-        domain: 'localhost',
-        path: '/',
-        httpOnly: true,
-        secure: false,
-        sameSite: 'Lax',
-      },
-    ]);
-    await page.reload();
   });
 
   test('should handle grading timeout gracefully', async ({ page }) => {

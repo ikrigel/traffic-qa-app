@@ -1,22 +1,10 @@
 import { test, expect } from '@playwright/test';
+import { loginAsUser } from '../fixtures/auth';
 
 test.describe('User API Keys Management', () => {
   test.beforeEach(async ({ page, context }) => {
-    // Set up authentication before each test
-    await page.goto('http://localhost:3000');
-
-    // Wait for login button and click it
-    const loginButton = page.getByRole('button', { name: /login with gmail/i });
-    if (await loginButton.isVisible()) {
-      await loginButton.click();
-
-      // Handle Google OAuth flow (in real tests, you'd use test credentials)
-      // For now, we'll wait for redirect and check if authenticated
-      await page.waitForNavigation({ timeout: 5000 }).catch(() => {});
-
-      // Check if we're back on home page with user info
-      await page.waitForSelector('[class*="Logged in as"]', { timeout: 5000 }).catch(() => {});
-    }
+    // Login as test user
+    await loginAsUser(page, 'user');
   });
 
   test('should open settings modal and navigate to API Keys tab', async ({ page }) => {

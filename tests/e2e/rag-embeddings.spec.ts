@@ -1,9 +1,13 @@
 import { test, expect } from '@playwright/test';
+import { loginAsUser } from '../fixtures/auth';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
 test.describe('RAG Embedding System', () => {
   test.beforeEach(async ({ page }) => {
+    // Login as super_admin for admin API access
+    await loginAsUser(page, 'super_admin');
+
     await page.goto(`${APP_URL}/`);
     await page.waitForLoadState('networkidle');
   });

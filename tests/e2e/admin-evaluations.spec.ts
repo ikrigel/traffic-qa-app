@@ -1,21 +1,13 @@
 import { test, expect } from '@playwright/test';
+import { loginAsUser } from '../fixtures/auth';
 
 test.describe('Admin Evaluations Panel', () => {
   test.beforeEach(async ({ page }) => {
+    // Login as super_admin for admin panel access
+    await loginAsUser(page, 'super_admin');
+
+    // Navigate to home
     await page.goto('/');
-    // Set test session with super_admin role
-    await page.context().addCookies([
-      {
-        name: 'auth_token',
-        value: 'test_token_super_admin',
-        domain: 'localhost',
-        path: '/',
-        httpOnly: true,
-        secure: false,
-        sameSite: 'Lax',
-      },
-    ]);
-    await page.reload();
   });
 
   test('should navigate to admin panel', async ({ page }) => {

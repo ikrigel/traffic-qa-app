@@ -1,21 +1,10 @@
 import { test, expect } from '@playwright/test';
+import { loginAsUser } from '../fixtures/auth';
 
 test.describe('Test Answer Input', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    // Set test session
-    await page.context().addCookies([
-      {
-        name: 'auth_token',
-        value: 'test_token_for_e2e_testing',
-        domain: 'localhost',
-        path: '/',
-        httpOnly: true,
-        secure: false,
-        sameSite: 'Lax',
-      },
-    ]);
-    await page.reload();
+    // Login as test user
+    await loginAsUser(page, 'user');
   });
 
   test('should display test answer input when question is visible', async ({ page }) => {
