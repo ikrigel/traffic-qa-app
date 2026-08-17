@@ -54,12 +54,21 @@ export async function generateWithFallback(
     const fullPrompt = systemPrompt ? `${systemPrompt}\n\n${userPrompt}` : userPrompt;
     console.log('[GENERATION] Calling Gemini API v1 with prompt length:', fullPrompt.length);
 
-    // Try models in order of preference
-    const modelsToTry = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro', 'text-bison-001'];
+    // Try models in order of preference (latest first)
+    // Note: older models like gemini-2.5-flash are deprecated for new users
+    const modelsToTry = ['gemini-3.6-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro'];
     let model = modelsToTry[0];
     if (availableModels.length > 0) {
-      model = availableModels[0];
-      console.log('[GENERATION] Using available model:', model);
+      // Check if any preferred model is available
+      const preferredModel = modelsToTry.find(m => availableModels.includes(m));
+      if (preferredModel) {
+        model = preferredModel;
+        console.log('[GENERATION] Using available model:', model);
+      } else {
+        // Fallback to first available
+        model = availableModels[0];
+        console.log('[GENERATION] Using first available model:', model);
+      }
     }
 
     const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`;
