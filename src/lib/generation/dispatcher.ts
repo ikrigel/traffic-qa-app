@@ -2,6 +2,21 @@
 import { logError } from '../logger';
 import type { DispatchResult, AttemptLog } from './types';
 
+async function listAvailableModels(apiKey: string): Promise<string[]> {
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1/models?key=${apiKey}`;
+    const response = await fetch(url);
+    if (!response.ok) return [];
+    const data = await response.json();
+    const models = data.models?.map((m: any) => m.name?.split('/').pop()).filter(Boolean) || [];
+    console.log('[GENERATION] Available models:', models);
+    return models;
+  } catch (e) {
+    console.error('[GENERATION] Failed to list models:', e);
+    return [];
+  }
+}
+
 export async function generateWithFallback(
   userId: string,
   systemPrompt: string,
@@ -33,10 +48,20 @@ export async function generateWithFallback(
       };
     }
 
+    // Check available models
+    const availableModels = await listAvailableModels(apiKey);
+
     const fullPrompt = systemPrompt ? `${systemPrompt}\n\n${userPrompt}` : userPrompt;
     console.log('[GENERATION] Calling Gemini API v1 with prompt length:', fullPrompt.length);
 
-    const model = 'gemini-1.5-flash';
+    // Try models in order of preference
+    const modelsToTry = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro', 'text-bison-001'];
+    let model = modelsToTry[0];
+    if (availableModels.length > 0) {
+      model = availableModels[0];
+      console.log('[GENERATION] Using available model:', model);
+    }
+
     const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`;
 
     let response;
