@@ -34,22 +34,38 @@ async function embedWithPinecone(text: string): Promise<number[]> {
       parameters: { input_type: 'passage', truncate: 'END' },
     });
 
+    // Log actual response structure for first chunk
+    if (!global.__pineconeLogged) {
+      global.__pineconeLogged = true;
+      const keys = result && typeof result === 'object' ? Object.keys(result) : [];
+      console.log('[EMBED] Response keys:', keys);
+      console.log('[EMBED] Response type:', typeof result, 'isArray:', Array.isArray(result));
+      if (result && typeof result === 'object' && 'data' in result) {
+        console.log('[EMBED] data.length:', (result as any).data?.length);
+        console.log('[EMBED] data[0]:', JSON.stringify((result as any).data?.[0]).substring(0, 200));
+      }
+    }
+
     // Handle different response formats from Pinecone SDK
     let embedding: number[] | undefined;
 
-    // Try direct array access (some versions return array directly)
-    if (Array.isArray(result)) {
-      embedding = result[0]?.values || result[0];
+    // Try data property (most likely for Pinecone SDK)
+    if (result && typeof result === 'object' && 'data' in result) {
+      const data = (result as any).data;
+      if (Array.isArray(data) && data.length > 0) {
+        embedding = data[0]?.values || data[0];
+      }
     }
     // Try embeddings property
     else if (result && typeof result === 'object' && 'embeddings' in result) {
       const embeds = (result as any).embeddings;
-      embedding = Array.isArray(embeds) ? embeds[0]?.values || embeds[0] : undefined;
+      if (Array.isArray(embeds) && embeds.length > 0) {
+        embedding = embeds[0]?.values || embeds[0];
+      }
     }
-    // Try data property
-    else if (result && typeof result === 'object' && 'data' in result) {
-      const data = (result as any).data;
-      embedding = Array.isArray(data) ? data[0]?.values || data[0] : undefined;
+    // Try direct array access
+    else if (Array.isArray(result) && result.length > 0) {
+      embedding = result[0]?.values || result[0];
     }
     // Try direct values property (fallback)
     else if (result && typeof result === 'object' && 'values' in result) {
@@ -57,8 +73,7 @@ async function embedWithPinecone(text: string): Promise<number[]> {
     }
 
     if (!embedding || !Array.isArray(embedding) || embedding.length === 0) {
-      console.error('[EMBED] Invalid response structure:', JSON.stringify(result).substring(0, 200));
-      throw new Error(`Invalid embedding response structure: ${typeof result}`);
+      throw new Error(`Got invalid embedding: ${typeof embedding}, length: ${Array.isArray(embedding) ? embedding.length : 'N/A'}`);
     }
     return embedding;
   } catch (error) {
@@ -114,6 +129,10 @@ export async function POST(request: NextRequest) {
     for (let i = 0; i < chunks.length; i++) {
       try {
         const chunkText = chunks[i];
+        // First chunk gets extra logging
+        if (i === 0) {
+          console.log(`[UPLOAD] 🔍 Chunk 0: text length ${chunkText.length}, sample: "${chunkText.substring(0, 50).replace(/\n/g, ' ')}..."`);
+        }
         const embedding = await embedWithPinecone(chunkText);
 
         if (!Array.isArray(embedding) || embedding.length === 0) {
@@ -135,10 +154,6 @@ export async function POST(request: NextRequest) {
       } catch (embedError) {
         const msg = embedError instanceof Error ? embedError.message : String(embedError);
         console.error(`[UPLOAD] ⚠️ Chunk ${i} embedding failed (continuing): ${msg}`);
-        // Log first error details for debugging
-        if (i === 0) {
-          console.error(`[UPLOAD] First chunk raw text length: ${chunks[i].length}`);
-        }
       }
     }
 
