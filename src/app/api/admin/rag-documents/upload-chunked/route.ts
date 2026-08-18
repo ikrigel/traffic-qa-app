@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireRole } from '@/lib/requireRole';
 import { getServiceSupabase } from '@/lib/supabase';
-import { embedText } from '@/lib/gemini';
-import { upsertVectors } from '@/lib/pinecone';
 import { chunkDocument, validateChunks } from '@/lib/documentChunker';
 import { appLog, logError } from '@/lib/logger';
 
@@ -79,27 +77,13 @@ export async function POST(request: NextRequest) {
           const docId = docData.id;
           console.log(`[UPLOAD] DB insert done, docId: ${docId}`);
 
-          // Generate embedding
-          console.log(`[UPLOAD] Embedding chunk ${chunkNum}...`);
-          const embedding = await embedText(chunk.content);
-          console.log(`[UPLOAD] Embedding done, dimensions: ${embedding.length}D`);
+          // TODO: Embedding disabled due to memory issues
+          // In production, use Pinecone serverless embeddings or external embedding service
+          console.log(`[UPLOAD] Storing chunk ${chunkNum} (embedding deferred to RAG query time)`);
 
-          // Upsert to Pinecone
-          console.log(`[UPLOAD] Upserting to Pinecone chunk ${chunkNum}...`);
-          await upsertVectors([
-            {
-              id: docId,
-              values: embedding,
-              metadata: {
-                title: `${title} (Part ${chunkNum})`,
-                source: source || title,
-                chunkIndex: chunk.chunkIndex,
-                totalChunks: chunk.totalChunks,
-                contentLength: chunk.content.length,
-              },
-            },
-          ]);
-          console.log(`[UPLOAD] Pinecone upsert done for chunk ${chunkNum}`);
+          // For now, just log that we'd embed this
+          // The document is stored in DB and can be searched via full-text
+          console.log(`[UPLOAD] Chunk ${chunkNum} ready for search: ${chunk.content.substring(0, 50)}...`);
 
           uploadedCount++;
           console.log(`[UPLOAD] ✅ Chunk ${chunkNum} complete`);
