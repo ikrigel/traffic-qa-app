@@ -34,12 +34,33 @@ async function embedWithPinecone(text: string): Promise<number[]> {
       parameters: { input_type: 'passage', truncate: 'END' },
     });
 
-    // Extract embedding values from result - handle various response formats
-    const embeddings = result as unknown as Array<{ values: number[] }>;
-    if (!Array.isArray(embeddings) || !embeddings[0]?.values) {
-      throw new Error('Invalid embedding response from Pinecone');
+    // Handle different response formats from Pinecone SDK
+    let embedding: number[] | undefined;
+
+    // Try direct array access (some versions return array directly)
+    if (Array.isArray(result)) {
+      embedding = result[0]?.values || result[0];
     }
-    return embeddings[0].values;
+    // Try embeddings property
+    else if (result && typeof result === 'object' && 'embeddings' in result) {
+      const embeds = (result as any).embeddings;
+      embedding = Array.isArray(embeds) ? embeds[0]?.values || embeds[0] : undefined;
+    }
+    // Try data property
+    else if (result && typeof result === 'object' && 'data' in result) {
+      const data = (result as any).data;
+      embedding = Array.isArray(data) ? data[0]?.values || data[0] : undefined;
+    }
+    // Try direct values property (fallback)
+    else if (result && typeof result === 'object' && 'values' in result) {
+      embedding = (result as any).values;
+    }
+
+    if (!embedding || !Array.isArray(embedding) || embedding.length === 0) {
+      console.error('[EMBED] Invalid response structure:', JSON.stringify(result).substring(0, 200));
+      throw new Error(`Invalid embedding response structure: ${typeof result}`);
+    }
+    return embedding;
   } catch (error) {
     throw new Error(
       `Pinecone embedding failed: ${error instanceof Error ? error.message : String(error)}`
@@ -95,6 +116,10 @@ export async function POST(request: NextRequest) {
         const chunkText = chunks[i];
         const embedding = await embedWithPinecone(chunkText);
 
+        if (!Array.isArray(embedding) || embedding.length === 0) {
+          throw new Error(`Embedding not an array or empty: ${typeof embedding}`);
+        }
+
         vectors.push({
           id: `${docId}_chunk_${i}`,
           values: embedding,
@@ -106,10 +131,14 @@ export async function POST(request: NextRequest) {
             text: chunkText.substring(0, 200),
           },
         });
-        console.log(`[UPLOAD] ✅ Embedded chunk ${i + 1}/${chunks.length}`);
+        console.log(`[UPLOAD] ✅ Embedded chunk ${i + 1}/${chunks.length} (${embedding.length}D)`);
       } catch (embedError) {
         const msg = embedError instanceof Error ? embedError.message : String(embedError);
         console.error(`[UPLOAD] ⚠️ Chunk ${i} embedding failed (continuing): ${msg}`);
+        // Log first error details for debugging
+        if (i === 0) {
+          console.error(`[UPLOAD] First chunk raw text length: ${chunks[i].length}`);
+        }
       }
     }
 
