@@ -9,6 +9,25 @@ interface ParseResult {
   message: string;
 }
 
+let pdfJsLoaded = false;
+let pdfJsLib: any = null;
+
+const loadPdfJs = async () => {
+  if (pdfJsLoaded && pdfJsLib) return pdfJsLib;
+  if (typeof window === 'undefined') {
+    throw new Error('PDF parsing requires browser environment');
+  }
+  try {
+    pdfJsLib = await import('pdfjs-dist');
+    pdfJsLib.GlobalWorkerOptions.workerSrc =
+      `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfJsLib.version}/pdf.worker.min.js`;
+    pdfJsLoaded = true;
+    return pdfJsLib;
+  } catch (err) {
+    throw new Error(`Failed to load PDF library: ${err instanceof Error ? err.message : 'Unknown error'}`);
+  }
+};
+
 export function useFileParser() {
   const [isParsing, setIsParsing] = useState(false);
 
@@ -30,9 +49,7 @@ export function useFileParser() {
   };
 
   const extractTextFromPDF = async (file: File): Promise<string> => {
-    const pdfjsLib = await import('pdfjs-dist');
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-
+    const pdfjsLib = await loadPdfJs();
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
