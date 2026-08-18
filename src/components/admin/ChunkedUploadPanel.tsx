@@ -43,6 +43,9 @@ export default function ChunkedUploadPanel() {
         const doc = parser.parseFromString(htmlContent, 'text/html');
         text = (doc.body.innerText || doc.body.textContent || '').trim();
       } else if (ext === 'pdf') {
+        if (file.size > 4.5 * 1024 * 1024) {
+          throw new Error(`PDF too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Vercel limit: 4.5MB. Solutions: 1) Paste text 2) Use smallpdf.com/ilovepdf.com 3) Split into smaller PDFs`);
+        }
         const formData = new FormData();
         formData.append('file', file);
         const response = await fetch('/api/admin/rag-documents/parse-file', {
@@ -52,7 +55,7 @@ export default function ChunkedUploadPanel() {
         });
         if (!response.ok) {
           if (response.status === 413) {
-            throw new Error('File too large for server. Try: 1) Paste text directly 2) Split PDF into smaller parts');
+            throw new Error('Server: file too large. Use online PDF converter first (smallpdf.com, ilovepdf.com)');
           }
           if (response.status === 400 || response.status === 500) {
             const error = await response.json().catch(() => ({}));
