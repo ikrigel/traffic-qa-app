@@ -34,6 +34,10 @@ export async function uploadTextChunks(
 
     onProgress(partNum, chunks.length, `⏳ Uploading part ${partNum}/${chunks.length}...`);
 
+    if (i > 0) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
     try {
       const response = await fetch('/api/admin/rag-documents/upload-chunked', {
         method: 'POST',
@@ -47,11 +51,23 @@ export async function uploadTextChunks(
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || `Upload failed for part ${partNum}`);
+        const text = await response.text();
+        const isJson = text.startsWith('{');
+        if (isJson) {
+          try {
+            const error = JSON.parse(text);
+            throw new Error(error.error || `Upload failed (${response.status})`);
+          } catch {
+            throw new Error(`Server error: ${response.status}`);
+          }
+        } else {
+          throw new Error(`Server error ${response.status}: ${text.substring(0, 100)}`);
+        }
       }
 
-      const result = await response.json();
+      const resultText = await response.text();
+      if (!resultText) throw new Error('Empty response');
+      const result = JSON.parse(resultText);
       if (!result.success) {
         throw new Error(result.error || `Part ${partNum} did not complete`);
       }
