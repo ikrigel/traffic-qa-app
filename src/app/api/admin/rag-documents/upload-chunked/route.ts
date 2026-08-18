@@ -48,51 +48,64 @@ export async function POST(request: NextRequest) {
     let failedCount = 0;
     const errors: string[] = [];
 
-    // Process each chunk
+    // Process each chunk with timeout
     for (const chunk of chunks) {
       try {
-        console.log(
-          `[UPLOAD] Processing chunk ${chunk.chunkIndex + 1}/${chunk.totalChunks}`
+        const chunkNum = chunk.chunkIndex + 1;
+        console.log(`[UPLOAD] Starting chunk ${chunkNum}/${chunk.totalChunks}`);
+
+        // Set 25 second timeout for chunk processing
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Chunk processing timeout (25s)')), 25000)
         );
 
-        // Store chunk in database
-        const { data: docData, error: dbError } = await supabase
-          .from('rag_documents')
-          .insert({
-            title: `${title} (Part ${chunk.chunkIndex + 1}/${chunk.totalChunks})`,
-            source: source || title,
-            content: chunk.content,
-          })
-          .select('id')
-          .single();
-
-        if (dbError || !docData) {
-          throw new Error(`DB insert failed: ${dbError?.message}`);
-        }
-
-        const docId = docData.id;
-
-        // Generate embedding
-        console.log(`[UPLOAD] Embedding chunk ${chunk.chunkIndex + 1}`);
-        const embedding = await embedText(chunk.content);
-
-        // Upsert to Pinecone
-        await upsertVectors([
-          {
-            id: docId,
-            values: embedding,
-            metadata: {
-              title: `${title} (Part ${chunk.chunkIndex + 1})`,
+        const processChunk = async () => {
+          // Store chunk in database
+          console.log(`[UPLOAD] DB insert for chunk ${chunkNum}...`);
+          const { data: docData, error: dbError } = await supabase
+            .from('rag_documents')
+            .insert({
+              title: `${title} (Part ${chunkNum}/${chunk.totalChunks})`,
               source: source || title,
-              chunkIndex: chunk.chunkIndex,
-              totalChunks: chunk.totalChunks,
-              contentLength: chunk.content.length,
-            },
-          },
-        ]);
+              content: chunk.content,
+            })
+            .select('id')
+            .single();
 
-        uploadedCount++;
-        console.log(`[UPLOAD] ✅ Chunk ${chunk.chunkIndex + 1} uploaded`);
+          if (dbError || !docData) {
+            throw new Error(`DB insert failed: ${dbError?.message || 'No data returned'}`);
+          }
+
+          const docId = docData.id;
+          console.log(`[UPLOAD] DB insert done, docId: ${docId}`);
+
+          // Generate embedding
+          console.log(`[UPLOAD] Embedding chunk ${chunkNum}...`);
+          const embedding = await embedText(chunk.content);
+          console.log(`[UPLOAD] Embedding done, dimensions: ${embedding.length}D`);
+
+          // Upsert to Pinecone
+          console.log(`[UPLOAD] Upserting to Pinecone chunk ${chunkNum}...`);
+          await upsertVectors([
+            {
+              id: docId,
+              values: embedding,
+              metadata: {
+                title: `${title} (Part ${chunkNum})`,
+                source: source || title,
+                chunkIndex: chunk.chunkIndex,
+                totalChunks: chunk.totalChunks,
+                contentLength: chunk.content.length,
+              },
+            },
+          ]);
+          console.log(`[UPLOAD] Pinecone upsert done for chunk ${chunkNum}`);
+
+          uploadedCount++;
+          console.log(`[UPLOAD] ✅ Chunk ${chunkNum} complete`);
+        };
+
+        await Promise.race([processChunk(), timeoutPromise]);
       } catch (chunkError) {
         failedCount++;
         const msg =
