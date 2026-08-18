@@ -80,7 +80,6 @@ describe('ChunkedUploadPanel', () => {
     const fileButton = screen.getByRole('button', { name: /choose file/i });
     const titleInput = screen.getByLabelText(/document title/i);
     const contentInput = screen.getByLabelText(/document content/i);
-    const uploadButton = screen.getByRole('button', { name: /upload & chunk/i });
 
     fireEvent.change(titleInput, { target: { value: 'Test' } });
     fireEvent.change(contentInput, { target: { value: 'Content' } });

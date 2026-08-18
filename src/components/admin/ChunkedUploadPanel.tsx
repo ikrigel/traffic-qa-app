@@ -44,7 +44,19 @@ export default function ChunkedUploadPanel() {
         const doc = parser.parseFromString(htmlContent, 'text/html');
         text = (doc.body.innerText || doc.body.textContent || '').trim();
       } else if (ext === 'pdf') {
-        text = '📄 PDF file selected. Please use server-side parsing or paste text directly.';
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await fetch('/api/admin/rag-documents/parse-file', {
+          method: 'POST',
+          credentials: 'include',
+          body: formData,
+        });
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'PDF parsing failed');
+        }
+        const result = await response.json();
+        text = result.text;
       } else {
         throw new Error(`Unsupported file type: .${ext}. Supported: .txt, .docx, .htm, .html, .pdf`);
       }
