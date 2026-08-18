@@ -198,8 +198,8 @@ export default function ChunkedUploadPanel() {
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Document Content *</label>
-          <textarea value={content} onChange={e => setContent(e.target.value)} placeholder="Paste your entire document here (any size - will auto-split if needed)..." rows={8} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm" disabled={isUploading}/>
-          <p className="text-xs text-gray-500 mt-1">{(content.length / 1024).toFixed(1)}KB ({content.length} characters)</p>
+          <textarea value={content} onChange={e => setContent(e.target.value)} placeholder="Paste your entire document here (any size - will auto-split into 50KB chunks)..." rows={8} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm" disabled={isUploading}/>
+          <p className="text-xs text-gray-500 mt-1">{(content.length / 1024).toFixed(1)}KB ({content.length} chars) → ~{Math.ceil(content.length / (50 * 1024))} parts</p>
         </div>
         <button onClick={handleUpload} disabled={isUploading || !title.trim() || !content.trim()} className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-semibold transition">
           {isUploading ? '⏳ Uploading...' : '📤 Upload & Chunk'}
@@ -209,12 +209,12 @@ export default function ChunkedUploadPanel() {
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2">
         <p className="font-semibold text-blue-900">ℹ️ How It Works</p>
         <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-          <li>Paste entire document (any size)</li>
-          <li>If {'>'} 200KB, automatically split into parts on your device</li>
+          <li>Paste entire document (any size, no limit!)</li>
+          <li>Auto-split into 50KB server request parts</li>
           <li>Each part uploaded separately with progress tracking</li>
-          <li>Documents split into 1,500 character chunks for embeddings</li>
-          <li>200 character overlap between chunks for context</li>
-          <li>All chunks embedded and uploaded to Pinecone with metadata</li>
+          <li>Server chunks into 1,500 char embeddings</li>
+          <li>200 char overlap between chunks for context</li>
+          <li>All chunks embedded and uploaded to Pinecone</li>
         </ul>
       </div>
     </div>

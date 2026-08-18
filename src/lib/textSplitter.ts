@@ -1,4 +1,4 @@
-export function splitTextIntoChunks(text: string, maxSize: number = 200 * 1024): string[] {
+export function splitTextIntoChunks(text: string, maxSize: number = 50 * 1024): string[] {
   const chunks: string[] = [];
   let start = 0;
   while (start < text.length) {
