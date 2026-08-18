@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { splitTextIntoChunks, uploadTextChunks } from '@/lib/textSplitter';
 import UploadStatusDisplay from './UploadStatusDisplay';
 
 interface UploadState {
@@ -116,50 +117,43 @@ export default function ChunkedUploadPanel() {
     }
 
     setIsUploading(true);
+    const chunks = splitTextIntoChunks(content.trim());
+
     setUploadState({
       filename: title,
-      progress: 10,
+      progress: 0,
       status: 'uploading',
-      message: '⏳ Uploading...',
+      message: `⏳ Uploading part 1/${chunks.length}...`,
     });
 
     try {
-      const response = await fetch('/api/admin/rag-documents/upload-chunked', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: title.trim(),
-          source: source.trim() || undefined,
-          content: content.trim(),
-        }),
+      const result = await uploadTextChunks(chunks, title.trim(), source.trim(), (part, total, msg) => {
+        setUploadState({
+          filename: title,
+          progress: Math.round((part / total) * 100),
+          status: 'uploading',
+          message: msg,
+        });
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Upload failed');
-      }
-
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || 'Upload did not complete successfully');
-      }
 
       const newState: UploadState = {
         filename: title,
         progress: 100,
-        status: 'success',
-        message: `✅ ${result.summary} (${result.uploaded}/${result.totalChunks} chunks uploaded)`,
+        status: result.successCount === result.totalChunks ? 'success' : 'error',
+        message:
+          result.successCount === result.totalChunks
+            ? `✅ All ${result.totalChunks} part${result.totalChunks > 1 ? 's' : ''} uploaded!`
+            : `⚠️ Uploaded ${result.successCount}/${result.totalChunks} parts`,
       };
 
       setUploadState(newState);
       setUploadHistory([newState, ...uploadHistory.slice(0, 9)]);
 
-      // Clear form
-      setTitle('');
-      setSource('');
-      setContent('');
+      if (result.successCount === result.totalChunks) {
+        setTitle('');
+        setSource('');
+        setContent('');
+      }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
       const newState: UploadState = {
@@ -204,16 +198,8 @@ export default function ChunkedUploadPanel() {
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Document Content *</label>
-          <textarea value={content} onChange={e => setContent(e.target.value)} placeholder="Paste your document text here (max 200KB per upload)..." rows={8} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm" disabled={isUploading}/>
-          <div className="flex justify-between items-center mt-1">
-            <p className="text-xs text-gray-500">{content.length} characters</p>
-            {content.length > 200 * 1024 && (
-              <p className="text-xs text-red-600">⚠️ Too large! Max 200KB.</p>
-            )}
-            {content.length > 150 * 1024 && content.length <= 200 * 1024 && (
-              <p className="text-xs text-orange-600">⚠️ Large - splitting recommended</p>
-            )}
-          </div>
+          <textarea value={content} onChange={e => setContent(e.target.value)} placeholder="Paste your entire document here (any size - will auto-split if needed)..." rows={8} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm" disabled={isUploading}/>
+          <p className="text-xs text-gray-500 mt-1">{(content.length / 1024).toFixed(1)}KB ({content.length} characters)</p>
         </div>
         <button onClick={handleUpload} disabled={isUploading || !title.trim() || !content.trim()} className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-semibold transition">
           {isUploading ? '⏳ Uploading...' : '📤 Upload & Chunk'}
@@ -221,14 +207,14 @@ export default function ChunkedUploadPanel() {
       </div>
       <UploadStatusDisplay uploadState={uploadState} uploadHistory={uploadHistory} />
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2">
-        <p className="font-semibold text-blue-900">ℹ️ Upload Limits & How Chunking Works</p>
+        <p className="font-semibold text-blue-900">ℹ️ How It Works</p>
         <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-          <li><strong>Max per upload: 200KB</strong> (splits large documents into multiple uploads)</li>
-          <li>Documents are split into 1,500 character chunks for embeddings</li>
+          <li>Paste entire document (any size)</li>
+          <li>If {'>'} 200KB, automatically split into parts on your device</li>
+          <li>Each part uploaded separately with progress tracking</li>
+          <li>Documents split into 1,500 character chunks for embeddings</li>
           <li>200 character overlap between chunks for context</li>
-          <li>Each chunk breaks at natural points (periods, newlines)</li>
-          <li>All chunks get embedded and uploaded to Pinecone</li>
-          <li>For files {'>'} 200KB: paste in multiple uploads or use online converters</li>
+          <li>All chunks embedded and uploaded to Pinecone with metadata</li>
         </ul>
       </div>
     </div>

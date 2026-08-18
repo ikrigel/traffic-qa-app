@@ -25,20 +25,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const contentSize = content.length;
-    const maxSize = 200 * 1024; // 200KB limit per request
-
-    if (contentSize > maxSize) {
-      return NextResponse.json(
-        {
-          error: `Document too large (${(contentSize / 1024).toFixed(0)}KB). Max: 200KB per upload. Solutions: 1) Split into smaller parts 2) Upload multiple times 3) Use a PDF converter to compress first`,
-        },
-        { status: 413 }
-      );
-    }
-
     console.log(`[UPLOAD] Starting chunked upload: ${title}`);
-    console.log(`[UPLOAD] Content size: ${contentSize} chars`);
+    console.log(`[UPLOAD] Content size: ${content.length} chars`);
 
     await appLog({
       source: 'rag-documents/upload-chunked',
