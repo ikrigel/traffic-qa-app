@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { splitLargePDF } from '@/lib/pdfSplitter';
 import UploadStatusDisplay from './UploadStatusDisplay';
 
 interface UploadState {
@@ -44,24 +43,8 @@ export default function ChunkedUploadPanel() {
         const doc = parser.parseFromString(htmlContent, 'text/html');
         text = (doc.body.innerText || doc.body.textContent || '').trim();
       } else if (ext === 'pdf') {
-        const fileNameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
         if (file.size > 4.5 * 1024 * 1024) {
-          const chunks = await splitLargePDF(file, fileNameWithoutExt);
-          setUploadState({
-            filename: file.name,
-            progress: 100,
-            status: 'success',
-            message: `✅ Split into ${chunks.length} parts (${chunks.reduce((sum, c) => sum + c.text.length, 0)} total chars). Ready to upload!`,
-          });
-          setTitle(`${fileNameWithoutExt} - Part 1/${chunks.length}`);
-          setContent(chunks[0].text);
-          setUploadState({
-            filename: file.name,
-            progress: 100,
-            status: 'success',
-            message: `✅ Split into ${chunks.length} parts - loaded first part`,
-          });
-          return;
+          throw new Error(`PDF is ${(file.size / 1024 / 1024).toFixed(1)}MB. Quickest solutions: 1) Paste text (Ctrl+A → Ctrl+C → paste) 2) Use ilovepdf.com/compress 3) https://www.adobe.com/tools/pdf-converter/extract-text`);
         }
         const formData = new FormData();
         formData.append('file', file);
@@ -72,7 +55,7 @@ export default function ChunkedUploadPanel() {
         });
         if (!response.ok) {
           if (response.status === 413) {
-            throw new Error('File too large. Try splitting into smaller PDFs');
+            throw new Error('File too large. Best option: paste text directly from PDF');
           }
           if (response.status === 400 || response.status === 500) {
             const error = await response.json().catch(() => ({}));
