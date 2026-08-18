@@ -24,27 +24,27 @@ function splitIntoEmbeddingChunks(text: string, chunkSize = 1500, overlapSize = 
 }
 
 async function embedWithPinecone(text: string): Promise<number[]> {
-  const apiKey = process.env.PINECONE_API_KEY;
-  if (!apiKey) throw new Error('PINECONE_API_KEY not configured');
+  const { getPineconeClient } = await import('@/lib/pinecone');
+  const pc = getPineconeClient();
 
-  const response = await fetch('https://api.pinecone.io/embed', {
-    method: 'POST',
-    headers: {
-      'Api-Key': apiKey,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
+  try {
+    const result = await pc.inference.embed({
       model: 'multilingual-e5-large',
       inputs: [text],
-    }),
-  });
+      parameters: { input_type: 'passage', truncate: 'END' },
+    });
 
-  if (!response.ok) {
-    throw new Error(`Pinecone embedding failed: ${response.status}`);
+    // Extract embedding values from result - handle various response formats
+    const embeddings = result as unknown as Array<{ values: number[] }>;
+    if (!Array.isArray(embeddings) || !embeddings[0]?.values) {
+      throw new Error('Invalid embedding response from Pinecone');
+    }
+    return embeddings[0].values;
+  } catch (error) {
+    throw new Error(
+      `Pinecone embedding failed: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
-
-  const result = await response.json();
-  return result.data?.[0]?.values || [];
 }
 
 export async function POST(request: NextRequest) {
