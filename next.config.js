@@ -3,6 +3,11 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   pageExtensions: ['ts', 'tsx', 'js', 'jsx'],
+  api: {
+    bodyParser: {
+      sizeLimit: '50mb',
+    },
+  },
   experimental: {
     typedRoutes: true,
   },

@@ -25,14 +25,14 @@ export default function ChunkedUploadPanel() {
     if (!files || !files[0]) return;
 
     const file = files[0];
-    const maxSize = 4 * 1024 * 1024;
+    const maxSize = 50 * 1024 * 1024;
 
     if (file.size > maxSize) {
       setUploadState({
         filename: file.name,
         progress: 0,
         status: 'error',
-        message: `❌ File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Max 4MB. Try: 1) Convert PDF to TXT 2) Paste text directly`,
+        message: `❌ File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Max 50MB. Paste text directly for very large files`,
       });
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
@@ -65,7 +65,7 @@ export default function ChunkedUploadPanel() {
         });
         if (!response.ok) {
           if (response.status === 413) {
-            throw new Error('PDF too large (>4MB). Convert to TXT or paste text directly');
+            throw new Error('PDF too large (>50MB). Paste text directly instead');
           }
           throw new Error(`PDF parsing failed (${response.status})`);
         }
