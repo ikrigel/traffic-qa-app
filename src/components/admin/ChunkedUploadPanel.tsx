@@ -25,19 +25,6 @@ export default function ChunkedUploadPanel() {
     if (!files || !files[0]) return;
 
     const file = files[0];
-    const maxSize = 50 * 1024 * 1024;
-
-    if (file.size > maxSize) {
-      setUploadState({
-        filename: file.name,
-        progress: 0,
-        status: 'error',
-        message: `❌ File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Max 50MB. Paste text directly for very large files`,
-      });
-      if (fileInputRef.current) fileInputRef.current.value = '';
-      return;
-    }
-
     setIsParsing(true);
     try {
       const ext = file.name.split('.').pop()?.toLowerCase();
@@ -65,7 +52,11 @@ export default function ChunkedUploadPanel() {
         });
         if (!response.ok) {
           if (response.status === 413) {
-            throw new Error('PDF too large (>50MB). Paste text directly instead');
+            throw new Error('File too large for server. Try: 1) Paste text directly 2) Split PDF into smaller parts');
+          }
+          if (response.status === 400 || response.status === 500) {
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.error || `Server error (${response.status})`);
           }
           throw new Error(`PDF parsing failed (${response.status})`);
         }
