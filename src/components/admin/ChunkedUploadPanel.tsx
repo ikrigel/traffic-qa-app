@@ -204,8 +204,16 @@ export default function ChunkedUploadPanel() {
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Document Content *</label>
-          <textarea value={content} onChange={e => setContent(e.target.value)} placeholder="Paste your document text here (supports up to 10MB+ of text)..." rows={8} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm" disabled={isUploading}/>
-          <p className="text-xs text-gray-500 mt-1">{content.length} characters</p>
+          <textarea value={content} onChange={e => setContent(e.target.value)} placeholder="Paste your document text here (max 200KB per upload)..." rows={8} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm" disabled={isUploading}/>
+          <div className="flex justify-between items-center mt-1">
+            <p className="text-xs text-gray-500">{content.length} characters</p>
+            {content.length > 200 * 1024 && (
+              <p className="text-xs text-red-600">⚠️ Too large! Max 200KB.</p>
+            )}
+            {content.length > 150 * 1024 && content.length <= 200 * 1024 && (
+              <p className="text-xs text-orange-600">⚠️ Large - splitting recommended</p>
+            )}
+          </div>
         </div>
         <button onClick={handleUpload} disabled={isUploading || !title.trim() || !content.trim()} className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-semibold transition">
           {isUploading ? '⏳ Uploading...' : '📤 Upload & Chunk'}
@@ -213,13 +221,14 @@ export default function ChunkedUploadPanel() {
       </div>
       <UploadStatusDisplay uploadState={uploadState} uploadHistory={uploadHistory} />
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2">
-        <p className="font-semibold text-blue-900">ℹ️ How Chunking Works</p>
+        <p className="font-semibold text-blue-900">ℹ️ Upload Limits & How Chunking Works</p>
         <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-          <li>Documents are split into 1,500 character chunks</li>
+          <li><strong>Max per upload: 200KB</strong> (splits large documents into multiple uploads)</li>
+          <li>Documents are split into 1,500 character chunks for embeddings</li>
           <li>200 character overlap between chunks for context</li>
           <li>Each chunk breaks at natural points (periods, newlines)</li>
           <li>All chunks get embedded and uploaded to Pinecone</li>
-          <li>Metadata links chunks to original document</li>
+          <li>For files {'>'} 200KB: paste in multiple uploads or use online converters</li>
         </ul>
       </div>
     </div>
