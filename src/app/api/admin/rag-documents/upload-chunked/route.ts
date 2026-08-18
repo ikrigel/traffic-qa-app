@@ -23,7 +23,7 @@ function splitIntoEmbeddingChunks(text: string, chunkSize = 1500, overlapSize = 
   return chunks.filter(c => c.length > 0);
 }
 
-async function embedWithPinecone(text: string): Promise<number[]> {
+async function embedWithPinecone(text: string, chunkIdx: number = -1): Promise<number[]> {
   const { getPineconeClient } = await import('@/lib/pinecone');
   const pc = getPineconeClient();
 
@@ -32,44 +32,54 @@ async function embedWithPinecone(text: string): Promise<number[]> {
       model: 'multilingual-e5-large',
       inputs: [text],
       parameters: { input_type: 'passage', truncate: 'END' },
-    });
+    }) as unknown;
 
-    // Log actual response structure for first chunk
-    if (!global.__pineconeLogged) {
-      global.__pineconeLogged = true;
+    // Log actual response structure on first chunk only
+    if (chunkIdx === 0) {
       const keys = result && typeof result === 'object' ? Object.keys(result) : [];
       console.log('[EMBED] Response keys:', keys);
       console.log('[EMBED] Response type:', typeof result, 'isArray:', Array.isArray(result));
-      if (result && typeof result === 'object' && 'data' in result) {
-        console.log('[EMBED] data.length:', (result as any).data?.length);
-        console.log('[EMBED] data[0]:', JSON.stringify((result as any).data?.[0]).substring(0, 200));
+      const obj = result as any;
+      if (obj?.data && Array.isArray(obj.data)) {
+        console.log('[EMBED] data.length:', obj.data.length);
+        console.log('[EMBED] data[0] keys:', Object.keys(obj.data[0] || {}).join(','));
       }
     }
 
     // Handle different response formats from Pinecone SDK
     let embedding: number[] | undefined;
+    const obj = result as any;
 
     // Try data property (most likely for Pinecone SDK)
-    if (result && typeof result === 'object' && 'data' in result) {
-      const data = (result as any).data;
-      if (Array.isArray(data) && data.length > 0) {
-        embedding = data[0]?.values || data[0];
+    if (obj?.data && Array.isArray(obj.data) && obj.data.length > 0) {
+      const item = obj.data[0];
+      if (item?.values && Array.isArray(item.values)) {
+        embedding = item.values;
+      } else if (Array.isArray(item)) {
+        embedding = item;
       }
     }
     // Try embeddings property
-    else if (result && typeof result === 'object' && 'embeddings' in result) {
-      const embeds = (result as any).embeddings;
-      if (Array.isArray(embeds) && embeds.length > 0) {
-        embedding = embeds[0]?.values || embeds[0];
+    else if (obj?.embeddings && Array.isArray(obj.embeddings) && obj.embeddings.length > 0) {
+      const item = obj.embeddings[0];
+      if (item?.values && Array.isArray(item.values)) {
+        embedding = item.values;
+      } else if (Array.isArray(item)) {
+        embedding = item;
       }
     }
     // Try direct array access
     else if (Array.isArray(result) && result.length > 0) {
-      embedding = result[0]?.values || result[0];
+      const item = result[0];
+      if (item?.values && Array.isArray(item.values)) {
+        embedding = item.values;
+      } else if (Array.isArray(item)) {
+        embedding = item;
+      }
     }
     // Try direct values property (fallback)
-    else if (result && typeof result === 'object' && 'values' in result) {
-      embedding = (result as any).values;
+    else if (obj?.values && Array.isArray(obj.values)) {
+      embedding = obj.values;
     }
 
     if (!embedding || !Array.isArray(embedding) || embedding.length === 0) {
@@ -133,7 +143,7 @@ export async function POST(request: NextRequest) {
         if (i === 0) {
           console.log(`[UPLOAD] 🔍 Chunk 0: text length ${chunkText.length}, sample: "${chunkText.substring(0, 50).replace(/\n/g, ' ')}..."`);
         }
-        const embedding = await embedWithPinecone(chunkText);
+        const embedding = await embedWithPinecone(chunkText, i);
 
         if (!Array.isArray(embedding) || embedding.length === 0) {
           throw new Error(`Embedding not an array or empty: ${typeof embedding}`);
