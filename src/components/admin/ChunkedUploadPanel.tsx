@@ -1,6 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import { useFileParser } from '@/hooks/useFileParser';
+import UploadStatusDisplay from './UploadStatusDisplay';
 
 interface UploadState {
   filename: string;
@@ -16,6 +18,35 @@ export default function ChunkedUploadPanel() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadState, setUploadState] = useState<UploadState | null>(null);
   const [uploadHistory, setUploadHistory] = useState<UploadState[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { parseFile, isParsing } = useFileParser();
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.currentTarget.files;
+    if (!files) return;
+
+    try {
+      const result = await parseFile(files[0]);
+      setTitle(result.title);
+      setContent(result.content);
+      setUploadState({
+        filename: files[0].name,
+        progress: 100,
+        status: 'success',
+        message: result.message,
+      });
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      setUploadState({
+        filename: files[0].name,
+        progress: 0,
+        status: 'error',
+        message: `❌ ${errorMsg}`,
+      });
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   const handleUpload = async () => {
     if (!title.trim()) {
@@ -98,19 +129,6 @@ export default function ChunkedUploadPanel() {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    if (status === 'success') return 'bg-green-50 border-green-200';
-    if (status === 'error') return 'bg-red-50 border-red-200';
-    if (status === 'uploading') return 'bg-blue-50 border-blue-200';
-    return 'bg-gray-50 border-gray-200';
-  };
-
-  const getStatusIcon = (status: string) => {
-    if (status === 'success') return '✅';
-    if (status === 'error') return '❌';
-    if (status === 'uploading') return '⏳';
-    return '⏹️';
-  };
 
   return (
     <div className="space-y-6">
@@ -120,6 +138,32 @@ export default function ChunkedUploadPanel() {
         <p className="text-sm text-gray-600">
           Upload large documents that will be automatically split into chunks for better embeddings
         </p>
+
+        {/* File Upload */}
+        <div className="border-2 border-dashed border-indigo-300 rounded-lg p-6 bg-indigo-50">
+          <label className="block text-sm font-medium text-gray-700 mb-3">📤 Upload File or Paste Text</label>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".txt,.docx,.htm,.html,.pdf"
+            onChange={handleFileSelect}
+            disabled={isUploading || isParsing}
+            className="hidden"
+          />
+          <div className="flex gap-3 flex-wrap">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading || isParsing}
+              className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition text-lg"
+            >
+              {isParsing ? '⏳ Parsing...' : '📁 Choose File'}
+            </button>
+            <div className="flex flex-col justify-center">
+              <p className="text-sm text-gray-700 font-medium">Supported: TXT, DOCX, HTM, PDF</p>
+              <p className="text-xs text-gray-600">Hebrew and Unicode fully supported</p>
+            </div>
+          </div>
+        </div>
 
         {/* Title Input */}
         <div>
@@ -171,46 +215,7 @@ export default function ChunkedUploadPanel() {
         </button>
       </div>
 
-      {/* Current Upload Status */}
-      {uploadState && (
-        <div className={`rounded-lg border-2 p-4 ${getStatusColor(uploadState.status)}`}>
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">{getStatusIcon(uploadState.status)}</span>
-            <div className="flex-1">
-              <p className="font-semibold text-gray-900">{uploadState.filename}</p>
-              <p className="text-sm text-gray-700">{uploadState.message}</p>
-              {uploadState.status === 'uploading' && (
-                <div className="mt-2 w-full bg-gray-300 rounded-full h-2">
-                  <div
-                    className="bg-indigo-600 h-2 rounded-full transition-all"
-                    style={{ width: `${uploadState.progress}%` }}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Upload History */}
-      {uploadHistory.length > 0 && (
-        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900">📋 Upload History</h3>
-          <div className="space-y-2 max-h-[400px] overflow-y-auto">
-            {uploadHistory.map((upload, idx) => (
-              <div key={idx} className={`rounded-lg border p-3 ${getStatusColor(upload.status)}`}>
-                <div className="flex items-start gap-2">
-                  <span className="text-lg flex-shrink-0">{getStatusIcon(upload.status)}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-900 break-words">{upload.filename}</p>
-                    <p className="text-sm text-gray-700">{upload.message}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      <UploadStatusDisplay uploadState={uploadState} uploadHistory={uploadHistory} />
 
       {/* Info Section */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2">
