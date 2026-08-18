@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { splitLargePDF } from '@/lib/pdfSplitter';
 import UploadStatusDisplay from './UploadStatusDisplay';
 
 interface UploadState {
@@ -43,8 +44,24 @@ export default function ChunkedUploadPanel() {
         const doc = parser.parseFromString(htmlContent, 'text/html');
         text = (doc.body.innerText || doc.body.textContent || '').trim();
       } else if (ext === 'pdf') {
+        const fileNameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
         if (file.size > 4.5 * 1024 * 1024) {
-          throw new Error(`PDF too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Vercel limit: 4.5MB. Solutions: 1) Paste text 2) Use smallpdf.com/ilovepdf.com 3) Split into smaller PDFs`);
+          const chunks = await splitLargePDF(file, fileNameWithoutExt);
+          setUploadState({
+            filename: file.name,
+            progress: 100,
+            status: 'success',
+            message: `✅ Split into ${chunks.length} parts (${chunks.reduce((sum, c) => sum + c.text.length, 0)} total chars). Ready to upload!`,
+          });
+          setTitle(`${fileNameWithoutExt} - Part 1/${chunks.length}`);
+          setContent(chunks[0].text);
+          setUploadState({
+            filename: file.name,
+            progress: 100,
+            status: 'success',
+            message: `✅ Split into ${chunks.length} parts - loaded first part`,
+          });
+          return;
         }
         const formData = new FormData();
         formData.append('file', file);
@@ -55,7 +72,7 @@ export default function ChunkedUploadPanel() {
         });
         if (!response.ok) {
           if (response.status === 413) {
-            throw new Error('Server: file too large. Use online PDF converter first (smallpdf.com, ilovepdf.com)');
+            throw new Error('File too large. Try splitting into smaller PDFs');
           }
           if (response.status === 400 || response.status === 500) {
             const error = await response.json().catch(() => ({}));
