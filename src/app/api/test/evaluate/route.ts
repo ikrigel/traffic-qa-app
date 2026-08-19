@@ -95,6 +95,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Update user progress
+    try {
+      console.log('[EVALUATE] Updating user progress...');
+      await fetch(new URL('/api/user/progress', request.url).toString(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Cookie': request.headers.get('cookie') || '' },
+        body: JSON.stringify({ questionId, verdict: grading.verdict }),
+      });
+    } catch (progressError) {
+      console.error('[EVALUATE] Progress update failed (non-fatal):', progressError);
+    }
+
     const duration = Date.now() - startTime;
     console.log(`[EVALUATE] Success! Completed in ${duration}ms. ID:`, data?.[0]?.id);
 
