@@ -46,13 +46,28 @@ export const gradeUserAnswer = async (input: GradingInput): Promise<GradingResul
 
     const faithfulness = metrics.faithfulness ?? 0;
     const relevance = metrics.relevance ?? 0;
+    const coherence = metrics.coherence ?? 0;
+    const contextPrecision = metrics.contextPrecision ?? 0;
+    const contextRecall = metrics.contextRecall ?? 0;
+
+    console.log('[GRADING] Thresholds - faith:', faithfulness, 'rel:', relevance, 'coh:', coherence);
 
     let verdict: 'correct' | 'partial' | 'incorrect' = 'incorrect';
-    if (faithfulness > 0.8 && relevance > 0.75) {
+
+    // If any main metrics are exactly 1.0, it's definitely correct
+    if (faithfulness >= 0.95 || relevance >= 0.95) {
       verdict = 'correct';
-    } else if (faithfulness > 0.6 && relevance > 0.6) {
+    }
+    // High scores on multiple metrics = correct
+    else if (faithfulness > 0.8 && relevance > 0.75 && coherence > 0.75) {
+      verdict = 'correct';
+    }
+    // Medium scores on multiple metrics = partial
+    else if ((faithfulness > 0.65 || relevance > 0.65) && coherence > 0.6) {
       verdict = 'partial';
     }
+
+    console.log('[GRADING] Verdict determined:', verdict);
 
     let feedback = 'לא ניתן ליצור משוב כרגע';
     try {
