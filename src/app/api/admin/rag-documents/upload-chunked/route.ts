@@ -28,11 +28,15 @@ async function embedWithPinecone(text: string, chunkIdx: number = -1): Promise<n
   const pc = getPineconeClient();
 
   try {
+    if (chunkIdx === 0) console.log('[EMBED] Starting inference call...');
+
     const result = await pc.inference.embed({
       model: 'multilingual-e5-large',
       inputs: [text],
       parameters: { input_type: 'passage', truncate: 'END' },
     }) as unknown;
+
+    if (chunkIdx === 0) console.log('[EMBED] Inference call returned, result type:', typeof result);
 
     // Log actual response structure on first chunk only
     if (chunkIdx === 0) {
@@ -83,13 +87,18 @@ async function embedWithPinecone(text: string, chunkIdx: number = -1): Promise<n
     }
 
     if (!embedding || !Array.isArray(embedding) || embedding.length === 0) {
+      if (chunkIdx === 0) {
+        console.error('[EMBED] Invalid embedding extracted:', { type: typeof embedding, isArray: Array.isArray(embedding), length: Array.isArray(embedding) ? embedding.length : 'N/A' });
+      }
       throw new Error(`Got invalid embedding: ${typeof embedding}, length: ${Array.isArray(embedding) ? embedding.length : 'N/A'}`);
     }
     return embedding;
   } catch (error) {
-    throw new Error(
-      `Pinecone embedding failed: ${error instanceof Error ? error.message : String(error)}`
-    );
+    const msg = error instanceof Error ? error.message : String(error);
+    if (chunkIdx === 0) {
+      console.error('[EMBED] Chunk 0 error:', msg);
+    }
+    throw new Error(`Pinecone embedding failed: ${msg}`);
   }
 }
 
