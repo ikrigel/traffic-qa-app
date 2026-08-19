@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { evaluateAnswer } from '@/lib/ragasClient';
 import type { RagasMetrics } from '@/types';
 
 export default function RagasEvaluationPanel() {
@@ -22,18 +21,22 @@ export default function RagasEvaluationPanel() {
     setLoading(true);
     setError(null);
     try {
-      const metrics = await evaluateAnswer(question, userAnswer, context || '', correctAnswer || undefined);
+      const response = await fetch('/api/admin/ragas-evaluate', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question,
+          userAnswer,
+          context: context || '',
+          correctAnswer: correctAnswer || undefined,
+        }),
+      });
 
-      let verdict = 'incorrect';
-      if ((metrics.faithfulness ?? 0) >= 0.95 || (metrics.relevance ?? 0) >= 0.95) {
-        verdict = 'correct';
-      } else if ((metrics.faithfulness ?? 0) > 0.8 && (metrics.relevance ?? 0) > 0.75 && (metrics.coherence ?? 0) > 0.75) {
-        verdict = 'correct';
-      } else if (((metrics.faithfulness ?? 0) > 0.65 || (metrics.relevance ?? 0) > 0.65) && (metrics.coherence ?? 0) > 0.6) {
-        verdict = 'partial';
-      }
+      if (!response.ok) throw new Error(`Server error: ${response.status}`);
 
-      setResult({ metrics, verdict });
+      const data = await response.json();
+      setResult(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Evaluation failed');
     } finally {

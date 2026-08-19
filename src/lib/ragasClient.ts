@@ -1,22 +1,30 @@
-import { RAGAssessment, Faithfulness, Relevance, Coherence, ContextPrecision, ContextRecall, GeminiProvider } from '@ikrigel/ragas-lib-typescript';
+'use server';
+
 import { logError } from './logger';
 import type { RagasMetrics } from '@/types';
 
-let ragassessment: RAGAssessment | null = null;
+// Lazy load RAGAS only on server side to avoid importing Node.js modules in browser
+let ragassessment: any = null;
 
-const initRAGAssessment = () => {
+const initRAGAssessment = async () => {
   if (!ragassessment) {
-    const config = {
-      provider: new GeminiProvider({
-        apiKey: process.env.GEMINI_API_KEY || '',
-      }),
-    };
-    ragassessment = new RAGAssessment(config);
-    ragassessment.registerMetric(new Faithfulness());
-    ragassessment.registerMetric(new Relevance());
-    ragassessment.registerMetric(new Coherence());
-    ragassessment.registerMetric(new ContextPrecision());
-    ragassessment.registerMetric(new ContextRecall());
+    try {
+      const { RAGAssessment, Faithfulness, Relevance, Coherence, ContextPrecision, ContextRecall, GeminiProvider } = await import('@ikrigel/ragas-lib-typescript');
+      const config = {
+        provider: new GeminiProvider({
+          apiKey: process.env.GEMINI_API_KEY || '',
+        }),
+      };
+      ragassessment = new RAGAssessment(config);
+      ragassessment.registerMetric(new Faithfulness());
+      ragassessment.registerMetric(new Relevance());
+      ragassessment.registerMetric(new Coherence());
+      ragassessment.registerMetric(new ContextPrecision());
+      ragassessment.registerMetric(new ContextRecall());
+    } catch (importError) {
+      console.error('[RAGAS] Import failed:', importError);
+      throw importError;
+    }
   }
   return ragassessment;
 };
@@ -28,7 +36,7 @@ export const evaluateAnswer = async (
   groundTruth?: string
 ): Promise<RagasMetrics> => {
   try {
-    const rag = initRAGAssessment();
+    const rag = await initRAGAssessment();
     const results = await rag.evaluate({
       question,
       answer,
@@ -47,7 +55,6 @@ export const evaluateAnswer = async (
     const message = error instanceof Error ? error.message : 'RAGAS evaluation failed';
     console.error('[RAGAS]', message);
     await logError({ source: 'ragasClient.evaluateAnswer', message });
-    // Return safe default metrics on error
     return {
       faithfulness: 0.5,
       relevance: 0.5,
