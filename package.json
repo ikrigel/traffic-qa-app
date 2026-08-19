@@ -21,6 +21,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.116.0",
     "@google/generative-ai": "^0.12.0",
+    "@ikrigel/ragas-lib-typescript": "^0.1.2",
     "@pinecone-database/pinecone": "^8.2.0",
     "@supabase/supabase-js": "^2.38.0",
     "axios": "^1.6.2",
