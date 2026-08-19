@@ -47,8 +47,6 @@ export const gradeUserAnswer = async (input: GradingInput): Promise<GradingResul
     const faithfulness = metrics.faithfulness ?? 0;
     const relevance = metrics.relevance ?? 0;
     const coherence = metrics.coherence ?? 0;
-    const contextPrecision = metrics.contextPrecision ?? 0;
-    const contextRecall = metrics.contextRecall ?? 0;
 
     console.log('[GRADING] Thresholds - faith:', faithfulness, 'rel:', relevance, 'coh:', coherence);
 
