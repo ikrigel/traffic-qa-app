@@ -70,6 +70,10 @@ export const gradeUserAnswer = async (input: GradingInput): Promise<GradingResul
     let feedback = 'לא ניתן ליצור משוב כרגע';
     try {
       const feedbackPrompt = `
+אתה מעריך תשובות של משתמשים לשאלות על דיני תעבורה בישראל.
+כל תקנות התעבורה נמצאות בקובץ תקנות התעבורה.
+הקונטקסט שלהלן מכיל את המידע הרלוונטי.
+
 בהינתן השאלה: "${question}"
 התשובה הנכונה: "${correctAnswer}"
 התשובה של המשתמש: "${userAnswer}"
