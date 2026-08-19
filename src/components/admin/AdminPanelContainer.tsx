@@ -7,9 +7,10 @@ import RagDocumentsPanel from './RagDocumentsPanel';
 import ChunkedUploadPanel from './ChunkedUploadPanel';
 import UnifiedLogsPanel from './UnifiedLogsPanel';
 import RagEvaluationPanel from './RagEvaluationPanel';
+import RagasEvaluationPanel from './RagasEvaluationPanel';
 import DevkitConsolePanel from './DevkitConsolePanel';
 
-type TabType = 'users' | 'rag-docs' | 'upload' | 'logs' | 'evaluations' | 'devkit';
+type TabType = 'users' | 'rag-docs' | 'upload' | 'logs' | 'evaluations' | 'ragas' | 'devkit';
 
 interface Props {
   user: AuthUser;
@@ -24,7 +25,7 @@ export default function AdminPanelContainer({ user }: Props) {
   // Load saved tab on mount
   useEffect(() => {
     const saved = localStorage.getItem(ADMIN_TAB_STORAGE_KEY) as TabType | null;
-    if (saved && ['users', 'rag-docs', 'upload', 'logs', 'evaluations', 'devkit'].includes(saved)) {
+    if (saved && ['users', 'rag-docs', 'upload', 'logs', 'evaluations', 'ragas', 'devkit'].includes(saved)) {
       setActiveTab(saved);
     }
   }, []);
@@ -41,6 +42,7 @@ export default function AdminPanelContainer({ user }: Props) {
     { id: 'upload', label: 'Upload (Chunked)', icon: '📤', visible: isSuperAdmin },
     { id: 'logs', label: 'Debug Logs', icon: '📋', visible: true },
     { id: 'evaluations', label: 'Evaluations', icon: '🤖', visible: true },
+    { id: 'ragas', label: 'RAGAS Tester', icon: '🧪', visible: isSuperAdmin },
     { id: 'devkit', label: 'DevKit Console', icon: '🖥️', visible: isSuperAdmin },
   ];
 
@@ -75,6 +77,7 @@ export default function AdminPanelContainer({ user }: Props) {
         {activeTab === 'upload' && isSuperAdmin && <ChunkedUploadPanel />}
         {activeTab === 'logs' && <UnifiedLogsPanel />}
         {activeTab === 'evaluations' && <RagEvaluationPanel />}
+        {activeTab === 'ragas' && isSuperAdmin && <RagasEvaluationPanel />}
         {activeTab === 'devkit' && isSuperAdmin && <DevkitConsolePanel />}
       </div>
     </div>
