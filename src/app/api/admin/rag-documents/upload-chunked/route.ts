@@ -180,6 +180,24 @@ export async function POST(request: NextRequest) {
     if (vectors.length > 0) {
       await upsertVectors(vectors);
       console.log(`[UPLOAD] 🎯 Upserted ${vectors.length} vectors to Pinecone`);
+
+      // Mark document as embedded/complete in metadata
+      const { error: updateError } = await supabase
+        .from('rag_documents')
+        .update({
+          metadata: {
+            embedding_status: 'complete',
+            embedded_at: new Date().toISOString(),
+            vector_count: vectors.length,
+          },
+        })
+        .eq('id', docId);
+
+      if (updateError) {
+        console.warn(`[UPLOAD] ⚠️ Failed to update document status: ${updateError.message}`);
+      } else {
+        console.log(`[UPLOAD] ✅ Document marked as complete`);
+      }
     }
 
     return NextResponse.json({

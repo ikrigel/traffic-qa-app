@@ -397,11 +397,11 @@ export default function RagDocumentsPanel() {
                   </div>
                   <div className="flex gap-2 items-center">
                     <span className={`text-xs px-2 py-1 rounded font-semibold ${
-                      doc.embedding
+                      (doc as any).metadata?.embedding_status === 'complete' || doc.embedding
                         ? 'bg-green-100 text-green-700'
                         : 'bg-yellow-100 text-yellow-700'
                     }`}>
-                      {doc.embedding ? '✅ Embedded' : '⏳ Pending'}
+                      {(doc as any).metadata?.embedding_status === 'complete' || doc.embedding ? '✅ Complete' : '⏳ Pending'}
                     </span>
                     <button
                       onClick={() => handleEditStart(doc)}
