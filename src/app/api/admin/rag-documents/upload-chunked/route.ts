@@ -182,7 +182,8 @@ export async function POST(request: NextRequest) {
       console.log(`[UPLOAD] 🎯 Upserted ${vectors.length} vectors to Pinecone`);
 
       // Mark document as embedded/complete in metadata
-      const { error: updateError } = await supabase
+      console.log(`[UPLOAD] Updating document ${docId} status...`);
+      const { error: updateError, data: updateData } = await supabase
         .from('rag_documents')
         .update({
           metadata: {
@@ -191,8 +192,10 @@ export async function POST(request: NextRequest) {
             vector_count: vectors.length,
           },
         })
-        .eq('id', docId);
+        .eq('id', docId)
+        .select();
 
+      console.log(`[UPLOAD] Update response:`, { error: updateError, dataCount: updateData?.length });
       if (updateError) {
         console.warn(`[UPLOAD] ⚠️ Failed to update document status: ${updateError.message}`);
       } else {
