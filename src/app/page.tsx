@@ -9,7 +9,7 @@ import HelpModal from '@/components/HelpModal';
 import AboutModal from '@/components/AboutModal';
 import SettingsModal from '@/components/SettingsModal';
 import ChatAssistant from '@/components/ChatAssistant';
-import ProgressCard from '@/components/ProgressCard';
+import UserProgressDisplay from '@/components/UserProgressDisplay';
 import { COURSES, getCourseQuestions } from '@/lib/questions';
 import { downloadPDF } from '@/lib/pdfGenerator';
 
@@ -156,7 +156,7 @@ export default function Home() {
               </div>
 
               {/* Quick Stats */}
-              <ProgressCard />
+              <UserProgressDisplay />
 
               {/* Courses Section */}
               <div className="mt-8">
