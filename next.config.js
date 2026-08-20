@@ -3,13 +3,19 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   pageExtensions: ['ts', 'tsx', 'js', 'jsx'],
-  api: {
-    bodyParser: {
-      sizeLimit: '50mb',
-    },
-  },
   experimental: {
     typedRoutes: true,
+  },
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        readline: false,
+        path: false,
+      };
+    }
+    return config;
   },
   headers: async () => [
     {
