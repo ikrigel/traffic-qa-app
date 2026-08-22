@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireRole } from '@/lib/requireRole';
 import { getServiceSupabase } from '@/lib/supabase';
-import { getPineconeIndex } from '@/lib/pinecone';
-import { embedText } from '@/lib/gemini';
+import { upsertVectors } from '@/lib/pinecone';
+import { embedPassagesBatch } from '@/lib/ragEmbedding';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,45 +29,48 @@ export async function POST(request: NextRequest) {
 
     console.log(`[MIGRATION] Found ${documents.length} documents to migrate`);
 
-    const index = getPineconeIndex();
     const vectors = [];
     let embeddingErrors = 0;
     const embeddingErrorDetails: Record<string, string> = {};
 
-    // Generate embeddings and prepare vectors
-    for (const doc of documents) {
+    // Generate embeddings in batches
+    const embeddingBatchSize = 50;
+    for (let i = 0; i < documents.length; i += embeddingBatchSize) {
+      const batch = documents.slice(i, i + embeddingBatchSize);
+      const batchNum = Math.floor(i / embeddingBatchSize) + 1;
+      const totalBatches = Math.ceil(documents.length / embeddingBatchSize);
+
+      console.log(`[MIGRATION] Embedding batch ${batchNum}/${totalBatches} (${batch.length} documents)`);
+
       try {
-        console.log(`[MIGRATION] Embedding document: ${doc.id} - ${doc.title}`);
-        const embedding = await embedText(doc.content);
+        const embeddings = await embedPassagesBatch(batch.map(d => d.content));
 
-        console.log(`[MIGRATION] ✅ Got embedding for ${doc.id}:`, {
-          isArray: Array.isArray(embedding),
-          length: embedding?.length,
-          type: typeof embedding,
-          sample: Array.isArray(embedding) ? embedding.slice(0, 3) : embedding,
-        });
+        for (let j = 0; j < batch.length; j++) {
+          const doc = batch[j];
+          const embedding = embeddings[j];
 
-        if (!Array.isArray(embedding) || embedding.length === 0) {
-          throw new Error(`Invalid embedding: ${typeof embedding}, length: ${embedding?.length || 'N/A'}`);
+          console.log(`[MIGRATION] ✅ Got embedding for ${doc.id} (${embedding.length}D)`);
+
+          vectors.push({
+            id: doc.id,
+            values: embedding,
+            metadata: {
+              title: doc.title,
+              source: doc.source || '',
+              createdAt: doc.created_at,
+            },
+          });
         }
 
-        vectors.push({
-          id: doc.id,
-          values: embedding,
-          metadata: {
-            title: doc.title,
-            source: doc.source || '',
-            createdAt: doc.created_at,
-          },
-        });
-
-        console.log(`[MIGRATION] 📦 Vector added to batch, total vectors: ${vectors.length}`);
+        console.log(`[MIGRATION] 📦 Batch ${batchNum} complete, total vectors: ${vectors.length}`);
       } catch (error) {
-        embeddingErrors++;
         const errorMsg = error instanceof Error ? error.message : String(error);
-        embeddingErrorDetails[doc.id] = errorMsg;
-        console.error(`[MIGRATION] Failed to embed ${doc.id}:`, errorMsg);
-        console.error(`[MIGRATION] Full error for ${doc.id}:`, error);
+        console.error(`[MIGRATION] Failed to embed batch ${batchNum}:`, errorMsg);
+
+        for (const doc of batch) {
+          embeddingErrors++;
+          embeddingErrorDetails[doc.id] = errorMsg;
+        }
       }
     }
 
@@ -99,23 +102,15 @@ export async function POST(request: NextRequest) {
         console.log(`[MIGRATION] Upserting batch ${batchNum}/${totalBatches} (${batch.length} vectors)`);
 
         try {
-          const records = batch.map(v => ({
-            id: v.id,
-            values: v.values,
-            metadata: v.metadata || {},
-          }));
-
           console.log(`[MIGRATION] Batch ${batchNum} record format check:`, {
-            sampleRecord: records[0],
-            vectorLength: records[0]?.values?.length,
+            sampleRecord: batch[0],
+            vectorLength: batch[0]?.values?.length,
           });
 
-          const result = await index.upsert({
-            records,
-          });
+          await upsertVectors(batch);
 
           upserted += batch.length;
-          console.log(`[MIGRATION] ✅ Batch ${batchNum} upserted successfully, result:`, result);
+          console.log(`[MIGRATION] ✅ Batch ${batchNum} upserted successfully (${batch.length} vectors)`);
         } catch (error) {
           const errorMsg = error instanceof Error ? error.message : String(error);
           upsertErrors[`batch_${batchNum}`] = errorMsg;

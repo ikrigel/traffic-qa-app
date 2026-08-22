@@ -26,10 +26,10 @@ export async function GET(request: NextRequest) {
       host: indexDescription.host,
       metric: indexDescription.metric,
       message: `✅ Index "${indexName}" is configured with ${indexDescription.dimension}D vectors`,
-      needsRecreation: indexDescription.dimension !== 3072,
-      instructions: indexDescription.dimension !== 3072
-        ? `❌ Index has ${indexDescription.dimension}D but needs 3072D. Delete and recreate with dimension: 3072`
-        : `✅ Index is correctly configured for 3072D vectors`,
+      needsRecreation: indexDescription.dimension !== 1024,
+      instructions: indexDescription.dimension !== 1024
+        ? `❌ Index has ${indexDescription.dimension}D but needs 1024D. Delete and recreate with dimension: 1024`
+        : `✅ Index is correctly configured for 1024D vectors`,
     });
   } catch (error) {
     console.error('[INDEX-CHECK] Error:', error);

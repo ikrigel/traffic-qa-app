@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireRole } from '@/lib/requireRole';
 import { getServiceSupabase } from '@/lib/supabase';
-import { embedText } from '@/lib/gemini';
 import { logError } from '@/lib/logger';
 import { getPineconeIndex } from '@/lib/pinecone';
+import { ingestDocument } from '@/lib/ragIngest';
 
 export const dynamic = 'force-dynamic';
 
@@ -76,63 +76,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (content.length > 200000) {
+    if (content.length > 5000000) {
       return NextResponse.json(
-        { error: 'Content is too long (max 200,000 characters)' },
+        { error: 'Content is too long (max 5 million characters)' },
         { status: 400 }
       );
     }
 
-    const supabase = getServiceSupabase();
-    const { data: doc, error: insertError } = await supabase
-      .from('rag_documents')
-      .insert({
-        title,
-        source: source || null,
-        content,
-        created_by: auth.user.id,
-      })
-      .select()
-      .single();
+    const result = await ingestDocument({
+      title,
+      source,
+      content,
+      createdBy: auth.user.id,
+    });
 
-    if (insertError) throw insertError;
-
-    try {
-      const embedding = await embedText(content);
-      const index = getPineconeIndex();
-      await index.upsert({
-        records: [{
-          id: doc.id,
-          values: embedding,
-          metadata: {
-            title,
-            source: source || '',
-            createdAt: new Date().toISOString(),
-          },
-        }],
-      });
-    } catch (embeddingError) {
-      await logError({
-        source: 'admin/rag-documents',
-        message: 'Failed to embed document content',
-        context: { docId: doc.id },
-      });
+    if (result.errors.length > 0) {
+      console.warn('[RAG-POST] Ingest warnings:', result.errors);
     }
 
     return NextResponse.json({
-      document: {
-        id: doc.id,
-        title: doc.title,
-        source: doc.source,
-        content: doc.content,
-        createdBy: doc.created_by,
-        createdAt: doc.created_at,
-      },
+      success: true,
+      parentDocumentId: result.parentDocumentId,
+      chunksCreated: result.chunksCreated,
+      vectorsUpserted: result.vectorsUpserted,
+      errors: result.errors,
     });
   } catch (error) {
-    console.error('RAG document creation error:', error);
+    const message = error instanceof Error ? error.message : String(error);
+    console.error('[RAG-POST] Document ingestion error:', message);
+    await logError({ source: 'admin/rag-documents/POST', message });
     return NextResponse.json(
-      { error: 'Failed to create document' },
+      { error: message },
       { status: 500 }
     );
   }

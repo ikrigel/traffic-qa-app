@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
 
     // Test 2: Try a simple query
     console.log('[PINECONE-TEST] Attempting test query with dummy vector...');
-    const testVector = new Array(768).fill(0.1);
+    const testVector = new Array(1024).fill(0.1);
     const queryResult = await index.query({
       vector: testVector,
       topK: 1,

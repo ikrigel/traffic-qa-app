@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { embedWithFallback } from './embeddings';
+import { embedQuery } from './ragEmbedding';
 import { queryVectors } from './pinecone';
 import { getServiceSupabase } from './supabase';
 import { logError } from './logger';
@@ -23,10 +23,8 @@ export const retrieveRelevantDocuments = async (
 
     let queryEmbedding: number[];
     try {
-      const embedResult = await embedWithFallback(query);
-      if (!embedResult) throw new Error('All embedding providers failed');
-      queryEmbedding = embedResult.embedding;
-      console.log('[RAG] ✅ Query embedded via', embedResult.provider);
+      queryEmbedding = await embedQuery(query);
+      console.log('[RAG] ✅ Query embedded via Pinecone e5-large');
       console.log('[RAG] Dimensions:', queryEmbedding.length);
     } catch (embedError) {
       const embedMsg = embedError instanceof Error ? embedError.message : String(embedError);

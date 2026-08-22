@@ -3,10 +3,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/session';
 import { apiError } from '@/lib/apiErrors';
 import { getServiceSupabase } from '@/lib/supabase';
-import { embedWithFallback } from '@/lib/embeddings';
 import { parseDocument } from '@/lib/documentParser';
 import { appLog, logError } from '@/lib/logger';
-import { chunkDocument, formatChunkInfo } from '@/lib/pdfChunker';
+import { ingestDocument } from '@/lib/ragIngest';
 import { calculateContentHash, checkForDuplicate } from '@/lib/documentHash';
 import fs from 'fs/promises';
 import path from 'path';
@@ -139,129 +138,60 @@ export async function POST(request: NextRequest) {
 
     console.log(`[CHUNK-FINALIZE] ✅ No duplicates found`);
 
-    // Check if content needs chunking
-    const MAX_CONTENT_LENGTH = 150000; // 150KB chars per chunk
-    const documentsToProcess = parsed.content.length > MAX_CONTENT_LENGTH
-      ? chunkDocument(parsed.content, parsed.title, source || `Uploaded: ${filename}`, parsed.pageCount || 0)
-      : [{
+    // Use unified ingestion pipeline
+    console.log(`[CHUNK-FINALIZE] 📚 Ingesting document with new chunker and embedder...`);
+    try {
+      const result = await ingestDocument({
         title: parsed.title,
-        content: parsed.content,
-        chunkIndex: 0,
-        totalChunks: 1,
-        pageStart: 1,
-        pageEnd: parsed.pageCount || 0,
         source: source || `Uploaded: ${filename}`,
-        isChunk: false,
-        parentTitle: parsed.title,
-      }];
+        content: parsed.content,
+        fileType: parsed.fileType,
+        uploadedFile: filename,
+        createdBy: user.id,
+      });
 
-    if (documentsToProcess.length > 1) {
-      console.log(`[CHUNK-FINALIZE] 📚 ${formatChunkInfo(documentsToProcess)}`);
       await appLog({
         source: 'rag-finalize',
-        message: `📚 Large document auto-chunked into ${documentsToProcess.length} parts`,
-        context: { fileName: filename, chunks: documentsToProcess.length, totalSize: parsed.content.length },
+        message: `✅ Document ingested: "${parsed.title}" (${result.chunksCreated} chunks, ${result.vectorsUpserted} vectors)`,
+        context: {
+          fileName: filename,
+          parentDocumentId: result.parentDocumentId,
+          chunks: result.chunksCreated,
+          vectors: result.vectorsUpserted,
+        },
       });
-    }
 
-    // Process each document/chunk
-    const results: any[] = [];
-
-    for (const doc of documentsToProcess) {
-      try {
-        // Generate embedding with fallback chain
-        console.log(`[CHUNK-FINALIZE] 🧮 Generating embedding for "${doc.title}"...`);
-        let embeddingResult: any = null;
-        let embedProvider: string | null = null;
-
-        try {
-          await appLog({ source: 'rag-finalize', message: `🧮 Embedding: "${doc.title}"`, context: { textLength: doc.content.length } });
-          embeddingResult = await embedWithFallback(doc.content);
-          if (embeddingResult) {
-            embedProvider = embeddingResult.provider;
-            console.log(`[CHUNK-FINALIZE] ✅ Embedding via ${embedProvider} (${embeddingResult.dimensions}D)`);
-            await appLog({ source: 'rag-finalize', message: `✅ Embedded via ${embedProvider}`, context: { dimensions: embeddingResult.dimensions } });
-          } else {
-            console.warn(`[CHUNK-FINALIZE] ⚠️ No embedding providers available`);
-            await logError({ source: 'rag-finalize', message: `⚠️ Embedding providers failed for "${doc.title}"`, level: 'warn' });
-          }
-        } catch (embedError) {
-          const embedMsg = embedError instanceof Error ? embedError.message : String(embedError);
-          console.error(`[CHUNK-FINALIZE] ❌ Embedding error: ${embedMsg}`);
-          await logError({ source: 'rag-finalize', message: `❌ Embedding error for "${doc.title}": ${embedMsg}`, level: 'error' });
+      const hasErrors = result.errors.length > 0;
+      if (hasErrors) {
+        for (const error of result.errors) {
+          console.warn(`[CHUNK-FINALIZE] ⚠️ Warning: ${error}`);
         }
-
-        const embedding = embeddingResult?.embedding || null;
-
-        // Insert into database
-        console.log(`[CHUNK-FINALIZE] 💾 Inserting "${doc.title}"...`);
-
-        const { data, error } = await supabase
-          .from('rag_documents')
-          .insert({
-            title: doc.title,
-            source: doc.source,
-            content: doc.content,
-            embedding: embedding || null,
-            metadata: {
-              uploadedFile: filename,
-              fileType: parsed.fileType,
-              uploadedAt: new Date().toISOString(),
-              embeddingStatus: embedding ? 'complete' : 'pending',
-              embeddingProvider: embedProvider || 'none',
-              contentHash: contentHash,
-              isChunk: doc.isChunk,
-              chunkIndex: doc.chunkIndex,
-              totalChunks: doc.totalChunks,
-              parentTitle: doc.parentTitle,
-              pageRange: `${doc.pageStart}-${doc.pageEnd}`,
-            },
-            created_by: user.id,
-          })
-          .select()
-          .single();
-
-        if (error) {
-          console.error(`[CHUNK-FINALIZE] ❌ DATABASE ERROR for "${doc.title}":`);
-          console.error(`[CHUNK-FINALIZE] Error: ${error.message}`);
-          results.push({
-            filename,
-            success: false,
-            error: `${doc.title}: ${error.message}`,
-          });
-        } else {
-          console.log(`[CHUNK-FINALIZE] ✅ Uploaded "${doc.title}"`);
-          results.push({
-            filename,
-            success: true,
-            id: data.id,
-            title: doc.title,
-            contentLength: doc.content.length,
-            fileType: parsed.fileType,
-            isChunk: doc.isChunk,
-            chunkInfo: doc.isChunk ? `Part ${doc.chunkIndex + 1}/${doc.totalChunks}` : undefined,
-          });
-        }
-      } catch (chunkError) {
-        const message = chunkError instanceof Error ? chunkError.message : 'Unknown error';
-        console.error(`[CHUNK-FINALIZE] ❌ Error processing chunk:`, message);
-        results.push({
-          filename,
-          success: false,
-          error: `Chunk error: ${message}`,
-        });
       }
+
+      return NextResponse.json({
+        success: true,
+        parentDocumentId: result.parentDocumentId,
+        chunksCreated: result.chunksCreated,
+        vectorsUpserted: result.vectorsUpserted,
+        filename,
+        title: parsed.title,
+        warnings: result.errors,
+      });
+    } catch (ingestError) {
+      const message = ingestError instanceof Error ? ingestError.message : String(ingestError);
+      console.error(`[CHUNK-FINALIZE] ❌ Ingestion error:`, message);
+      await logError({
+        source: 'rag-finalize',
+        message: `❌ Document ingestion failed for "${parsed.title}": ${message}`,
+      });
+
+      return NextResponse.json({
+        success: false,
+        error: message,
+        filename,
+        title: parsed.title,
+      }, { status: 500 });
     }
-
-    const successCount = results.filter((r) => r.success).length;
-    console.log(`[CHUNK-FINALIZE] ✅ Finalization complete: ${successCount}/${results.length} successful`);
-
-    return NextResponse.json({
-      success: true,
-      uploaded: successCount,
-      total: results.length,
-      results,
-    });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Finalization failed';
     console.error('[CHUNK-FINALIZE] Error:', message);
