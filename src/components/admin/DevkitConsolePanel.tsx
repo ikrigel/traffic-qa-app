@@ -18,6 +18,8 @@ export default function DevkitConsolePanel() {
   const [manager, setManager] = useState<any>(null);
   const [serverLogs, setServerLogs] = useState<ServerLog[]>([]);
   const [loading, setLoading] = useState(false);
+  const [autoSync, setAutoSync] = useState(true);
+  const [logFilter, setLogFilter] = useState<'all' | 'trace' | 'error' | 'none'>('all');
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -54,12 +56,22 @@ export default function DevkitConsolePanel() {
 
   useEffect(() => {
     fetchServerLogs();
-    refreshIntervalRef.current = setInterval(fetchServerLogs, 3000);
+
+    if (autoSync) {
+      refreshIntervalRef.current = setInterval(fetchServerLogs, 2000);
+    }
 
     return () => {
       if (refreshIntervalRef.current) clearInterval(refreshIntervalRef.current);
     };
-  }, []);
+  }, [autoSync]);
+
+  const filteredServerLogs = serverLogs.filter(log => {
+    if (logFilter === 'none') return false;
+    if (logFilter === 'trace') return log.level.toLowerCase() === 'trace';
+    if (logFilter === 'error') return log.level.toLowerCase() === 'error';
+    return true;
+  });
 
   if (!manager) {
     return (
@@ -72,26 +84,54 @@ export default function DevkitConsolePanel() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-start">
+      <div className="flex justify-between items-start flex-wrap gap-4">
         <div>
           <h3 className="text-lg font-semibold text-gray-800">Live Debugging Console</h3>
           <p className="text-sm text-gray-600">
-            Real-time client-side debugging + server logs ({serverLogs.length} recent entries)
+            Real-time client + server debugging ({filteredServerLogs.length} / {serverLogs.length} server logs)
           </p>
         </div>
-        <button
-          onClick={fetchServerLogs}
-          disabled={loading}
-          className="px-3 py-2 bg-indigo-500 text-white rounded text-sm hover:bg-indigo-600 disabled:opacity-50 font-semibold"
-        >
-          🔄 Sync
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setAutoSync(!autoSync)}
+            className={`px-3 py-2 rounded text-sm font-semibold transition ${
+              autoSync
+                ? 'bg-green-500 text-white'
+                : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
+            }`}
+          >
+            {autoSync ? '🔄 Auto' : '⏸ Manual'}
+          </button>
+          <button
+            onClick={fetchServerLogs}
+            disabled={loading}
+            className="px-3 py-2 bg-indigo-500 text-white rounded text-sm hover:bg-indigo-600 disabled:opacity-50 font-semibold"
+          >
+            🔄 Sync
+          </button>
+        </div>
       </div>
 
-      {serverLogs.length > 0 && (
-        <div className="bg-amber-50 border border-amber-300 rounded-lg p-4 space-y-2 max-h-[200px] overflow-y-auto">
-          <p className="text-sm font-semibold text-amber-900">📡 Recent Server Logs:</p>
-          {serverLogs.slice(0, 10).map(log => (
+      <div className="flex gap-2">
+        {(['all', 'trace', 'error', 'none'] as const).map(filter => (
+          <button
+            key={filter}
+            onClick={() => setLogFilter(filter)}
+            className={`px-3 py-2 rounded text-sm font-semibold transition ${
+              logFilter === filter
+                ? 'bg-indigo-600 text-white'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            {filter === 'all' ? '📊 All' : filter === 'trace' ? '📍 Trace' : filter === 'error' ? '❌ Error' : '🚫 None'}
+          </button>
+        ))}
+      </div>
+
+      {filteredServerLogs.length > 0 && (
+        <div className="bg-amber-50 border border-amber-300 rounded-lg p-4 space-y-2 max-h-[300px] overflow-y-auto">
+          <p className="text-sm font-semibold text-amber-900">📡 Server Logs ({filteredServerLogs.length}):</p>
+          {filteredServerLogs.slice(0, 20).map(log => (
             <div key={log.id} className="text-xs text-amber-800 font-mono">
               <span className="font-bold">[{log.level.toUpperCase()}]</span>
               <span className="text-amber-700"> {log.source}:</span> {log.message}

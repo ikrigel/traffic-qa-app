@@ -19,6 +19,9 @@ export default function UnifiedLogsPanel() {
   const [tab, setTab] = useState<'all' | 'server' | 'client'>('all');
   const [allLogs, setAllLogs] = useState<LogEntry[]>([]);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [refreshRate, setRefreshRate] = useState(2000);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [deleting, setDeleting] = useState(false);
   const { logs: serverLogs, loading, error, refetch } = useAdminLogs(level === 'all' ? 'all' : level);
   const debugManagerRef = useRef<any>(null);
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -77,12 +80,63 @@ export default function UnifiedLogsPanel() {
 
     refreshIntervalRef.current = setInterval(() => {
       refetch();
-    }, 2000);
+    }, refreshRate);
 
     return () => {
       if (refreshIntervalRef.current) clearInterval(refreshIntervalRef.current);
     };
-  }, [autoRefresh, refetch]);
+  }, [autoRefresh, refreshRate, refetch]);
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelected(new Set(filteredLogs.map(log => log.id)));
+    } else {
+      setSelected(new Set());
+    }
+  };
+
+  const handleSelectLog = (id: string, checked: boolean) => {
+    const newSelected = new Set(selected);
+    if (checked) {
+      newSelected.add(id);
+    } else {
+      newSelected.delete(id);
+    }
+    setSelected(newSelected);
+  };
+
+  const handleDeleteLogs = async (ids: string[]) => {
+    if (!window.confirm(`Delete ${ids.length} log(s)? This cannot be undone.`)) return;
+
+    setDeleting(true);
+    try {
+      const response = await fetch('/api/admin/logs/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ logIds: ids }),
+      });
+      if (response.ok) {
+        setSelected(new Set());
+        refetch();
+      }
+    } catch (err) {
+      console.error('Delete failed:', err);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleExportLogs = (logs: LogEntry[]) => {
+    const data = JSON.stringify(logs, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `logs-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const getLevelColor = (lvl: string) => {
     if (lvl === 'error') return 'bg-red-100 text-red-800 border-l-4 border-red-500';
@@ -102,10 +156,10 @@ export default function UnifiedLogsPanel() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center flex-wrap gap-4">
+      <div className="flex justify-between items-start flex-wrap gap-4">
         <div>
           <h3 className="text-lg font-semibold text-gray-800">Unified Debug Logs</h3>
-          <p className="text-sm text-gray-600">{filteredLogs.length} entries</p>
+          <p className="text-sm text-gray-600">{filteredLogs.length} entries {selected.size > 0 && `• ${selected.size} selected`}</p>
           {error && <p className="text-sm text-red-600">Error: {error}</p>}
         </div>
 
@@ -120,6 +174,19 @@ export default function UnifiedLogsPanel() {
           >
             {autoRefresh ? '⏸ Auto' : '▶ Manual'}
           </button>
+
+          {autoRefresh && (
+            <select
+              value={refreshRate}
+              onChange={e => setRefreshRate(Number(e.target.value))}
+              className="px-3 py-2 border border-gray-300 rounded bg-white text-sm focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value={1000}>1s</option>
+              <option value={2000}>2s</option>
+              <option value={5000}>5s</option>
+              <option value={10000}>10s</option>
+            </select>
+          )}
 
           <select
             value={level}
@@ -139,6 +206,43 @@ export default function UnifiedLogsPanel() {
           >
             🔄 Refresh
           </button>
+
+          {filteredLogs.length > 0 && (
+            <>
+              <button
+                onClick={() => handleExportLogs(filteredLogs)}
+                className="px-3 py-2 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 font-semibold"
+              >
+                📥 Export All
+              </button>
+              {selected.size > 0 && (
+                <button
+                  onClick={() => handleExportLogs(filteredLogs.filter(l => selected.has(l.id)))}
+                  className="px-3 py-2 bg-blue-400 text-white rounded text-sm hover:bg-blue-500 font-semibold"
+                >
+                  📥 Export ({selected.size})
+                </button>
+              )}
+            </>
+          )}
+
+          <button
+            onClick={() => handleDeleteLogs(Array.from(selected))}
+            disabled={selected.size === 0 || deleting}
+            className="px-3 py-2 bg-red-500 text-white rounded text-sm hover:bg-red-600 disabled:opacity-50 font-semibold"
+          >
+            🗑️ Delete ({selected.size})
+          </button>
+
+          {filteredLogs.length > 0 && (
+            <button
+              onClick={() => handleDeleteLogs(filteredLogs.map(l => l.id))}
+              disabled={deleting}
+              className="px-3 py-2 bg-red-700 text-white rounded text-sm hover:bg-red-800 disabled:opacity-50 font-semibold"
+            >
+              🗑️ Clear All
+            </button>
+          )}
         </div>
       </div>
 
@@ -165,16 +269,34 @@ export default function UnifiedLogsPanel() {
             <p className="text-sm">Logs will appear here as they are generated</p>
           </div>
         ) : (
-          filteredLogs.map(log => (
-            <div key={log.id} className={`rounded p-3 ${getLevelColor(log.level)}`}>
-              <div className="flex gap-2 items-center mb-1 flex-wrap">
-                <span className="font-semibold text-xs uppercase">{log.level}</span>
-                <span className="text-xs bg-white/50 px-2 py-0.5 rounded">{getTypeLabel(log.type)}</span>
-                <span className="text-xs font-mono text-gray-700">{log.source}</span>
-                <span className="text-xs text-gray-600 ml-auto whitespace-nowrap">
-                  {new Date(log.timestamp).toLocaleTimeString()}
-                </span>
+          <>
+            {filteredLogs.length > 0 && (
+              <div className="flex items-center gap-2 pb-3 border-b border-gray-300">
+                <input
+                  type="checkbox"
+                  checked={selected.size === filteredLogs.length && filteredLogs.length > 0}
+                  onChange={e => handleSelectAll(e.target.checked)}
+                  className="w-4 h-4 cursor-pointer"
+                />
+                <span className="text-xs text-gray-600">Select all visible</span>
               </div>
+            )}
+            {filteredLogs.map(log => (
+              <div key={log.id} className={`rounded p-3 ${getLevelColor(log.level)}`}>
+                <div className="flex gap-2 items-center mb-1 flex-wrap">
+                  <input
+                    type="checkbox"
+                    checked={selected.has(log.id)}
+                    onChange={e => handleSelectLog(log.id, e.target.checked)}
+                    className="w-4 h-4 cursor-pointer"
+                  />
+                  <span className="font-semibold text-xs uppercase">{log.level}</span>
+                  <span className="text-xs bg-white/50 px-2 py-0.5 rounded">{getTypeLabel(log.type)}</span>
+                  <span className="text-xs font-mono text-gray-700">{log.source}</span>
+                  <span className="text-xs text-gray-600 ml-auto whitespace-nowrap">
+                    {new Date(log.timestamp).toLocaleTimeString()}
+                  </span>
+                </div>
               <p className="text-sm font-medium mb-1">{log.message}</p>
               {log.context && Object.keys(log.context).length > 0 && (
                 <details className="text-xs">
@@ -184,8 +306,9 @@ export default function UnifiedLogsPanel() {
                   </pre>
                 </details>
               )}
-            </div>
-          ))
+              </div>
+            ))}
+          </>
         )}
       </div>
     </div>
