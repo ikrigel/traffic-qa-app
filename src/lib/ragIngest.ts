@@ -96,7 +96,7 @@ export async function ingestDocument(params: IngestDocumentParams): Promise<Inge
         parent_document_id: parentDocumentId,
         parent_title: title,
         total_chunks: chunks.length,
-        regulation_numbers: chunk.regulationNumbers ? chunk.regulationNumbers.join(',') : null,
+        regulation_numbers: chunk.regulationNumbers || null,
         metadata: {
           contentHash,
           embeddingStatus: 'complete',
