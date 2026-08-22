@@ -9,8 +9,9 @@ import RagEvaluationPanel from './RagEvaluationPanel';
 import RagasEvaluationPanel from './RagasEvaluationPanel';
 import DevkitConsolePanel from './DevkitConsolePanel';
 import CourseManagementPanel from './CourseManagementPanel';
+import MultipleChoiceQuestionsPanel from './MultipleChoiceQuestionsPanel';
 
-type TabType = 'users' | 'rag-docs' | 'logs' | 'evaluations' | 'ragas' | 'devkit' | 'courses';
+type TabType = 'users' | 'rag-docs' | 'logs' | 'evaluations' | 'ragas' | 'devkit' | 'courses' | 'questions';
 
 interface Props {
   user: AuthUser;
@@ -25,7 +26,7 @@ export default function AdminPanelContainer({ user }: Props) {
   // Load saved tab on mount
   useEffect(() => {
     const saved = localStorage.getItem(ADMIN_TAB_STORAGE_KEY) as TabType | null;
-    if (saved && ['users', 'rag-docs', 'logs', 'evaluations', 'ragas', 'devkit', 'courses'].includes(saved)) {
+    if (saved && ['users', 'rag-docs', 'logs', 'evaluations', 'ragas', 'devkit', 'courses', 'questions'].includes(saved)) {
       setActiveTab(saved);
     }
   }, []);
@@ -39,6 +40,7 @@ export default function AdminPanelContainer({ user }: Props) {
   const tabs: Array<{ id: TabType; label: string; icon: string; visible: boolean }> = [
     { id: 'users', label: 'Users', icon: '👥', visible: true },
     { id: 'courses', label: 'Courses', icon: '🎓', visible: isSuperAdmin },
+    { id: 'questions', label: 'Questions', icon: '❓', visible: isSuperAdmin },
     { id: 'rag-docs', label: 'RAG Documents', icon: '📄', visible: isSuperAdmin },
     { id: 'logs', label: 'Debug Logs', icon: '📋', visible: true },
     { id: 'evaluations', label: 'Evaluations', icon: '🤖', visible: true },
@@ -74,6 +76,7 @@ export default function AdminPanelContainer({ user }: Props) {
       <div className="bg-white rounded-lg shadow-sm p-6">
         {activeTab === 'users' && <UserManagementPanel />}
         {activeTab === 'courses' && isSuperAdmin && <CourseManagementPanel />}
+        {activeTab === 'questions' && isSuperAdmin && <MultipleChoiceQuestionsPanel />}
         {activeTab === 'rag-docs' && isSuperAdmin && <RagDocumentsPanel />}
         {activeTab === 'logs' && <UnifiedLogsPanel />}
         {activeTab === 'evaluations' && <RagEvaluationPanel />}
