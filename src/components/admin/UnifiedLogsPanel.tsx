@@ -22,6 +22,7 @@ export default function UnifiedLogsPanel() {
   const [refreshRate, setRefreshRate] = useState(2000);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
+  const [loggingEnabled, setLoggingEnabled] = useState(true);
   const { logs: serverLogs, loading, error, refetch } = useAdminLogs(level === 'all' ? 'all' : level);
   const debugManagerRef = useRef<any>(null);
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -30,6 +31,40 @@ export default function UnifiedLogsPanel() {
     const manager = initDebugManager();
     debugManagerRef.current = manager;
   }, []);
+
+  useEffect(() => {
+    const checkLoggingStatus = async () => {
+      try {
+        const response = await fetch('/api/admin/logging/toggle', {
+          credentials: 'include',
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setLoggingEnabled(data.loggingEnabled);
+        }
+      } catch (err) {
+        console.error('Failed to check logging status:', err);
+      }
+    };
+    checkLoggingStatus();
+  }, []);
+
+  const handleToggleLogging = async () => {
+    try {
+      const response = await fetch('/api/admin/logging/toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ enabled: !loggingEnabled }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setLoggingEnabled(data.loggingEnabled);
+      }
+    } catch (err) {
+      console.error('Failed to toggle logging:', err);
+    }
+  };
 
   useEffect(() => {
     const combineLogs = () => {
@@ -160,10 +195,24 @@ export default function UnifiedLogsPanel() {
         <div>
           <h3 className="text-lg font-semibold text-gray-800">Unified Debug Logs</h3>
           <p className="text-sm text-gray-600">{filteredLogs.length} entries {selected.size > 0 && `• ${selected.size} selected`}</p>
+          <p className={`text-sm font-semibold ${loggingEnabled ? 'text-green-600' : 'text-red-600'}`}>
+            {loggingEnabled ? '✅ Logging Active' : '🚫 Logging Disabled'}
+          </p>
           {error && <p className="text-sm text-red-600">Error: {error}</p>}
         </div>
 
         <div className="flex gap-2 flex-wrap">
+          <button
+            onClick={handleToggleLogging}
+            className={`px-3 py-2 rounded text-sm font-semibold transition ${
+              loggingEnabled
+                ? 'bg-green-500 text-white hover:bg-green-600'
+                : 'bg-red-500 text-white hover:bg-red-600'
+            }`}
+          >
+            {loggingEnabled ? '✅ Logging On' : '🚫 Logging Off'}
+          </button>
+
           <button
             onClick={() => setAutoRefresh(!autoRefresh)}
             className={`px-3 py-2 rounded text-sm font-semibold transition ${

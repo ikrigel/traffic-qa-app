@@ -1,4 +1,5 @@
 import { getServiceSupabase } from './supabase';
+import { isLoggingEnabled } from './loggingStatus';
 
 type LogLevel = 'info' | 'warn' | 'error';
 
@@ -51,6 +52,10 @@ export const appLog = async ({
   const prefix = `[${timestamp}] [${level.toUpperCase()}] [${source}]`;
   // eslint-disable-next-line no-console
   console.log(`${prefix} ${message}`, context ? context : '');
+
+  if (!isLoggingEnabled()) {
+    return;
+  }
 
   logQueue.push({ source, message, context, level });
   // eslint-disable-next-line no-console
