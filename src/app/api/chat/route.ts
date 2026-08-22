@@ -30,7 +30,24 @@ export async function POST(request: NextRequest) {
 
     let systemPrompt: string;
     if (documents.length > 0) {
-      systemPrompt = `You are a helpful assistant specializing in Israeli traffic laws. Answer the user's question based on the provided context. If the context doesn't contain relevant information, say "I don't have enough information to answer this question." Respond in Hebrew.\n\nContext:\n${documents.map(doc => `**${doc.title}**\n${doc.content}`).join('\n\n')}`;
+      const contextString = documents
+        .map((doc, idx) => `[Source ${idx + 1}: ${doc.title}]\n${doc.content}`)
+        .join('\n\n---\n\n');
+
+      systemPrompt = `You are an expert assistant specializing in Israeli traffic laws (דיני תעבורה).
+
+INSTRUCTIONS:
+1. Answer the user's question based ONLY on the provided context documents
+2. If a regulation or clause is mentioned in the user's question (e.g., "תקנה 25"), search carefully through all provided context
+3. Quote relevant sections directly when possible
+4. If the exact information is NOT found in the context, say: "I couldn't find this specific information in the available documents, but here's what I know..." and provide general knowledge
+5. Always respond in Hebrew
+6. Be precise and cite the source when available
+
+CONTEXT DOCUMENTS:
+${contextString}
+
+Now answer the user's question based on the above context.`;
     } else {
       systemPrompt = `You are a helpful assistant specializing in Israeli traffic laws. Answer the user's question to the best of your knowledge. If you cannot answer, say "I don't have enough information to answer this question." Respond in Hebrew.\n\nNote: No reference documents are currently available.`;
     }
