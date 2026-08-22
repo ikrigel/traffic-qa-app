@@ -10,8 +10,9 @@ import RagasEvaluationPanel from './RagasEvaluationPanel';
 import DevkitConsolePanel from './DevkitConsolePanel';
 import CourseManagementPanel from './CourseManagementPanel';
 import MultipleChoiceQuestionsPanel from './MultipleChoiceQuestionsPanel';
+import DocumentSourcesPanel from './DocumentSourcesPanel';
 
-type TabType = 'users' | 'rag-docs' | 'logs' | 'evaluations' | 'ragas' | 'devkit' | 'courses' | 'questions';
+type TabType = 'users' | 'rag-docs' | 'logs' | 'evaluations' | 'ragas' | 'devkit' | 'courses' | 'questions' | 'sources';
 
 interface Props {
   user: AuthUser;
@@ -26,7 +27,7 @@ export default function AdminPanelContainer({ user }: Props) {
   // Load saved tab on mount
   useEffect(() => {
     const saved = localStorage.getItem(ADMIN_TAB_STORAGE_KEY) as TabType | null;
-    if (saved && ['users', 'rag-docs', 'logs', 'evaluations', 'ragas', 'devkit', 'courses', 'questions'].includes(saved)) {
+    if (saved && ['users', 'rag-docs', 'logs', 'evaluations', 'ragas', 'devkit', 'courses', 'questions', 'sources'].includes(saved)) {
       setActiveTab(saved);
     }
   }, []);
@@ -39,6 +40,7 @@ export default function AdminPanelContainer({ user }: Props) {
 
   const tabs: Array<{ id: TabType; label: string; icon: string; visible: boolean }> = [
     { id: 'users', label: 'Users', icon: '👥', visible: true },
+    { id: 'sources', label: 'Document Sources', icon: '📚', visible: isSuperAdmin },
     { id: 'courses', label: 'Courses', icon: '🎓', visible: isSuperAdmin },
     { id: 'questions', label: 'Questions', icon: '❓', visible: isSuperAdmin },
     { id: 'rag-docs', label: 'RAG Documents', icon: '📄', visible: isSuperAdmin },
@@ -75,6 +77,7 @@ export default function AdminPanelContainer({ user }: Props) {
       {/* Tab Content */}
       <div className="bg-white rounded-lg shadow-sm p-6">
         {activeTab === 'users' && <UserManagementPanel />}
+        {activeTab === 'sources' && isSuperAdmin && <DocumentSourcesPanel />}
         {activeTab === 'courses' && isSuperAdmin && <CourseManagementPanel />}
         {activeTab === 'questions' && isSuperAdmin && <MultipleChoiceQuestionsPanel />}
         {activeTab === 'rag-docs' && isSuperAdmin && <RagDocumentsPanel />}
