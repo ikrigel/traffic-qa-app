@@ -3,12 +3,19 @@
 import { useState, useEffect } from 'react';
 import { useAdminQuestions, type AdminQuestion, type QuestionOption } from '@/hooks/useAdminQuestions';
 
+interface Course {
+  id: string;
+  title: string;
+}
+
 export default function MultipleChoiceQuestionsPanel() {
   const [questions, setQuestions] = useState<AdminQuestion[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [questionType, setQuestionType] = useState<'multiple_choice' | 'free_text'>('multiple_choice');
   const [questionText, setQuestionText] = useState('');
   const [category, setCategory] = useState('');
   const [difficulty, setDifficulty] = useState('medium');
+  const [selectedCourses, setSelectedCourses] = useState<Set<string>>(new Set());
   const [options, setOptions] = useState<QuestionOption[]>([
     { text: '', is_correct: false },
     { text: '', is_correct: false },
@@ -22,6 +29,21 @@ export default function MultipleChoiceQuestionsPanel() {
     };
     load();
   }, [fetchQuestions]);
+
+  useEffect(() => {
+    const loadCourses = async () => {
+      try {
+        const response = await fetch('/api/admin/courses', { credentials: 'include' });
+        if (response.ok) {
+          const data = await response.json();
+          setCourses(data.courses || []);
+        }
+      } catch (err) {
+        console.error('Failed to load courses:', err);
+      }
+    };
+    loadCourses();
+  }, []);
 
   const handleAddOption = () => {
     setOptions([...options, { text: '', is_correct: false }]);
@@ -60,7 +82,8 @@ export default function MultipleChoiceQuestionsPanel() {
       questionType,
       questionType === 'multiple_choice' ? options.filter(o => o.text.trim()) : undefined,
       category,
-      difficulty
+      difficulty,
+      Array.from(selectedCourses)
     );
 
     if (q) {
@@ -68,6 +91,7 @@ export default function MultipleChoiceQuestionsPanel() {
       setQuestionText('');
       setCategory('');
       setDifficulty('medium');
+      setSelectedCourses(new Set());
       setOptions([{ text: '', is_correct: false }, { text: '', is_correct: false }]);
     }
   };
@@ -121,6 +145,35 @@ export default function MultipleChoiceQuestionsPanel() {
             <option value="medium">Medium</option>
             <option value="hard">Hard</option>
           </select>
+        </div>
+
+        <div className="bg-white rounded p-3 border border-purple-200">
+          <p className="text-sm font-semibold text-gray-700 mb-2">🎓 Link to Courses (optional)</p>
+          {courses.length === 0 ? (
+            <p className="text-xs text-gray-500">No courses available</p>
+          ) : (
+            <div className="space-y-2">
+              {courses.map(course => (
+                <label key={course.id} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedCourses.has(course.id)}
+                    onChange={e => {
+                      const newSelected = new Set(selectedCourses);
+                      if (e.target.checked) {
+                        newSelected.add(course.id);
+                      } else {
+                        newSelected.delete(course.id);
+                      }
+                      setSelectedCourses(newSelected);
+                    }}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm text-gray-700">{course.title}</span>
+                </label>
+              ))}
+            </div>
+          )}
         </div>
 
         {questionType === 'multiple_choice' && (

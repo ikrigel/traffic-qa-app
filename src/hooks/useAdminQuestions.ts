@@ -45,7 +45,8 @@ export function useAdminQuestions() {
       question_type: 'free_text' | 'multiple_choice',
       options?: QuestionOption[],
       category?: string,
-      difficulty?: string
+      difficulty?: string,
+      course_ids?: string[]
     ): Promise<AdminQuestion | null> => {
       setLoading(true);
       setError(null);
@@ -54,7 +55,7 @@ export function useAdminQuestions() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify({ question_text, question_type, options, category, difficulty }),
+          body: JSON.stringify({ question_text, question_type, options, category, difficulty, course_ids }),
         });
         if (!response.ok) throw new Error('Failed to create question');
         const data = await response.json();

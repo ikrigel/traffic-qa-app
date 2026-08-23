@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
   if (!auth.authorized) return auth.response;
 
   try {
-    const { question_text, question_type, category, difficulty, options } = await request.json();
+    const { question_text, question_type, category, difficulty, options, course_ids } = await request.json();
 
     if (!question_text) {
       return NextResponse.json({ error: 'Question text is required' }, { status: 400 });
@@ -77,6 +77,20 @@ export async function POST(request: NextRequest) {
 
       if (oError) throw oError;
       createdOptions = opts || [];
+    }
+
+    // Link to courses if provided
+    if (Array.isArray(course_ids) && course_ids.length > 0) {
+      const { error: courseError } = await supabase
+        .from('course_admin_questions')
+        .insert(
+          course_ids.map((course_id: string) => ({
+            course_id,
+            admin_question_id: question.id,
+          }))
+        );
+
+      if (courseError) throw courseError;
     }
 
     return NextResponse.json({
