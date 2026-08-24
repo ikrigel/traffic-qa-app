@@ -12,6 +12,9 @@ interface DocumentSource {
   last_ingested_at?: string;
 }
 
+// Pinecone rate limit: 250K tokens per minute
+// const TOKENS_PER_MINUTE = 250000;
+
 export default function DocumentSourcesPanel() {
   const [sources, setSources] = useState<DocumentSource[]>([]);
   const [sourceType, setSourceType] = useState<'url' | 'text'>('url');
@@ -20,6 +23,11 @@ export default function DocumentSourcesPanel() {
   const [text, setText] = useState('');
   const [regulationsToVerify, setRegulationsToVerify] = useState('25,24,23,22,21');
   const [loading, setLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{
+    startTime: number;
+    estimatedTokens?: number;
+    estimatedDuration?: number;
+  } | null>(null);
   const [verifyResult, setVerifyResult] = useState<any>(null);
   const [error, setError] = useState('');
 
@@ -57,6 +65,7 @@ export default function DocumentSourcesPanel() {
 
     setLoading(true);
     setError('');
+    setUploadProgress({ startTime: Date.now() });
 
     try {
       const response = await fetch('/api/admin/document-sources', {
@@ -75,16 +84,27 @@ export default function DocumentSourcesPanel() {
 
       if (!response.ok) {
         setError(data.error || 'Failed to add source');
+        setUploadProgress(null);
         return;
       }
+
+      // Calculate upload metrics
+      const elapsedMs = Date.now() - (uploadProgress?.startTime || 0);
+      const elapsedMinutes = elapsedMs / 60000;
+      const tpm = data.tokens ? Math.round(data.tokens / elapsedMinutes) : 0;
 
       setName('');
       setUrl('');
       setText('');
       setError('');
+      setUploadProgress(null);
       await fetchSources();
+
+      // Show success with metrics
+      console.log(`✅ Upload complete: ${data.tokens || 0} tokens in ${(elapsedMs / 1000).toFixed(1)}s (${tpm} TPM)`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add source');
+      setUploadProgress(null);
     } finally {
       setLoading(false);
     }
@@ -119,9 +139,34 @@ export default function DocumentSourcesPanel() {
     }
   };
 
+  // Calculate progress if uploading
+  const progress = uploadProgress ? {
+    elapsedMs: Date.now() - uploadProgress.startTime,
+    elapsedSec: (Date.now() - uploadProgress.startTime) / 1000,
+  } : null;
+
   return (
     <div className="space-y-6">
       {error && <p className="text-sm text-red-600 bg-red-50 p-3 rounded">{error}</p>}
+
+      {/* Upload Progress */}
+      {uploadProgress && (
+        <div className="bg-amber-50 border border-amber-300 rounded-lg p-4 space-y-2">
+          <div className="flex justify-between items-center">
+            <p className="font-semibold text-amber-900">📤 Uploading...</p>
+            <p className="text-sm text-amber-700">{progress?.elapsedSec.toFixed(1)}s elapsed</p>
+          </div>
+          <div className="w-full bg-amber-200 rounded-full h-2">
+            <div
+              className="bg-amber-600 h-2 rounded-full transition-all"
+              style={{ width: `${Math.min(90, (progress?.elapsedSec || 0) * 10)}%` }}
+            />
+          </div>
+          <p className="text-xs text-amber-700">
+            Fetching → Chunking → Embedding → Storing vectors...
+          </p>
+        </div>
+      )}
 
       {/* Add Source */}
       <div className="bg-blue-50 border border-blue-300 rounded-lg p-4 space-y-4">

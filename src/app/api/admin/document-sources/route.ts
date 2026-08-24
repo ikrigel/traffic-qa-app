@@ -57,7 +57,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       chunks_created: result.chunks,
-      message: `Successfully ingested ${result.chunks} chunks`,
+      tokens: result.tokens,
+      message: `Successfully ingested ${result.chunks} chunks (${result.tokens} tokens)`,
     });
   } catch (error) {
     console.error('Source creation error:', error);
