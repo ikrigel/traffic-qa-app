@@ -2,10 +2,15 @@
 
 import { useState } from 'react';
 
+interface Source {
+  id: string;
+  title: string;
+}
+
 interface Message {
   role: 'user' | 'assistant';
   content: string;
-  sources?: string[];
+  sources?: Source[];
 }
 
 export default function ChatAssistant() {
@@ -110,7 +115,14 @@ export default function ChatAssistant() {
                   >
                     <p>{msg.content}</p>
                     {msg.sources && msg.sources.length > 0 && (
-                      <p className="text-xs opacity-75 mt-1">Sources: {msg.sources.join(', ')}</p>
+                      <div className="text-xs opacity-75 mt-2 pt-2 border-t border-gray-300">
+                        <p className="font-semibold mb-1">📚 Sources:</p>
+                        <ul className="space-y-1">
+                          {msg.sources.map((source, i) => (
+                            <li key={i} className="text-xs">• {source.title}</li>
+                          ))}
+                        </ul>
+                      </div>
                     )}
                   </div>
                 </div>
