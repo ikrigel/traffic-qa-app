@@ -12,9 +12,13 @@ export interface RetrievedDocument {
   similarity: number;
 }
 
-// Extract regulation number from query (e.g., "תקנה 25" or "תקנה 25א")
+// Extract regulation number from query (e.g., "תקנה 25", "25", "25.")
 function extractRegulationNumber(query: string): number | null {
-  const match = query.match(/תקנה\s+(\d+)/);
+  // Try multiple patterns to find regulation numbers
+  let match = query.match(/תקנה\s+(\d+)/); // "תקנה 25"
+  if (!match) {
+    match = query.match(/(\d+)[א-ת]?/); // Just a number
+  }
   return match ? parseInt(match[1], 10) : null;
 }
 
@@ -33,16 +37,17 @@ export const retrieveRelevantDocuments = async (
     // Check if query contains a regulation number
     const regulationNum = extractRegulationNumber(query);
     if (regulationNum) {
-      console.log(`[RAG] 🔍 Found regulation number: תקנה ${regulationNum}`);
-      // Search for exact regulation number first
+      console.log(`[RAG] 🔍 Found regulation number: ${regulationNum}`);
+      // Search for exact regulation number - try multiple patterns
+      // Patterns: "25.", "25 ", "25\n", etc.
       const { data: regDocs, error: regError } = await supabase
         .from('rag_documents')
         .select('id, title, content, source')
-        .ilike('content', `%תקנה ${regulationNum}%`)
+        .or(`content.ilike.%${regulationNum}.,content.ilike.%${regulationNum}\ ,content.ilike.%${regulationNum}%תקנה%`)
         .limit(limit);
 
       if (!regError && regDocs && regDocs.length > 0) {
-        console.log(`[RAG] ✅ Found ${regDocs.length} documents with תקנה ${regulationNum}`);
+        console.log(`[RAG] ✅ Found ${regDocs.length} documents with regulation ${regulationNum}`);
         results = regDocs.map((doc: any, idx: number) => ({
           id: doc.id,
           title: doc.title,
