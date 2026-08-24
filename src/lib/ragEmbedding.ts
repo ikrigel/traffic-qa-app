@@ -1,9 +1,52 @@
 'use server';
 
 import { logError } from './logger';
+import { estimateTokenCount } from './tokenCounter';
+
+// Rate limiting: 250K tokens per minute = 4166 tokens per second
+const TOKENS_PER_MINUTE = 250000;
+const TOKENS_PER_SECOND = TOKENS_PER_MINUTE / 60;
+
+let tokenBucket = TOKENS_PER_MINUTE; // Start with full quota
+let lastRefill = Date.now();
 
 async function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function throttleTokens(tokenCount: number): Promise<number> {
+  // Refill token bucket based on elapsed time
+  const now = Date.now();
+  const elapsedSeconds = (now - lastRefill) / 1000;
+  const tokensRefilled = elapsedSeconds * TOKENS_PER_SECOND;
+
+  tokenBucket = Math.min(TOKENS_PER_MINUTE, tokenBucket + tokensRefilled);
+  lastRefill = now;
+
+  // Wait if we need more tokens than available
+  while (tokenBucket < tokenCount) {
+    const tokenShortfall = tokenCount - tokenBucket;
+    const waitMs = Math.ceil((tokenShortfall / TOKENS_PER_SECOND) * 1000);
+
+    console.log(
+      `[RAG-EMBED] Rate limit: waiting ${waitMs}ms for ${tokenShortfall} tokens ` +
+      `(have ${Math.floor(tokenBucket)}/${TOKENS_PER_MINUTE})`
+    );
+
+    await sleep(Math.min(waitMs, 1000)); // Sleep in 1s chunks max
+
+    // Refill again
+    const now2 = Date.now();
+    const elapsedSeconds2 = (now2 - lastRefill) / 1000;
+    const tokensRefilled2 = elapsedSeconds2 * TOKENS_PER_SECOND;
+    tokenBucket = Math.min(TOKENS_PER_MINUTE, tokenBucket + tokensRefilled2);
+    lastRefill = now2;
+  }
+
+  // Consume tokens
+  tokenBucket -= tokenCount;
+  console.log(`[RAG-EMBED] Consumed ${tokenCount} tokens (${Math.floor(tokenBucket)} remaining)`);
+  return tokenBucket;
 }
 
 async function withRetry<T>(
@@ -128,6 +171,10 @@ export async function embedQuery(text: string): Promise<number[]> {
 export async function embedPassagesBatch(texts: string[]): Promise<number[][]> {
   try {
     if (texts.length === 0) return [];
+
+    // Estimate tokens and throttle
+    const tokenCount = texts.reduce((sum, text) => sum + estimateTokenCount(text), 0);
+    await throttleTokens(tokenCount);
 
     return await withRetry(async () => {
       const { getPineconeClient } = await import('./pinecone');

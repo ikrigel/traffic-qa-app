@@ -1,6 +1,7 @@
 import { getServiceSupabase } from './supabase';
 import { ingestDocument } from './ragIngest';
 import { logError, appLog } from './logger';
+import { estimateTokenCount } from './tokenCounter';
 import crypto from 'crypto';
 
 export interface DocumentSource {
@@ -102,7 +103,7 @@ export function tokenizeHebrewText(text: string): string[] {
 export async function ingestDocumentSource(
   source: DocumentSource,
   userId: string
-): Promise<{ success: boolean; chunks: number; error?: string }> {
+): Promise<{ success: boolean; chunks: number; tokens: number; error?: string }> {
   try {
     let content: string;
 
@@ -121,6 +122,10 @@ export async function ingestDocumentSource(
     if (!content || content.length < 50) {
       throw new Error('Content too short or empty');
     }
+
+    // Estimate tokens
+    const estimatedTokens = estimateTokenCount(content);
+    console.log(`[INGEST] Estimated tokens: ${estimatedTokens} (from ${content.length} chars)`);
 
     // Ingest the document
     const result = await ingestDocument({
@@ -167,11 +172,11 @@ export async function ingestDocumentSource(
 
     await appLog({
       source: 'documentIngestion.ingestDocumentSource',
-      message: `✅ Ingested "${source.name}": ${result.chunksCreated} chunks, ${regulations.length} regulations`,
-      context: { regulations },
+      message: `✅ Ingested "${source.name}": ${result.chunksCreated} chunks, ${estimatedTokens} tokens, ${regulations.length} regulations`,
+      context: { regulations, estimatedTokens },
     });
 
-    return { success: true, chunks: result.chunksCreated };
+    return { success: true, chunks: result.chunksCreated, tokens: estimatedTokens };
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     console.error('[INGEST] ❌ Error:', msg);
@@ -180,7 +185,7 @@ export async function ingestDocumentSource(
       message: msg,
     });
 
-    return { success: false, chunks: 0, error: msg };
+    return { success: false, chunks: 0, tokens: 0, error: msg };
   }
 }
 
