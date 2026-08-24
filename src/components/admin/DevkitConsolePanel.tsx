@@ -14,6 +14,8 @@ interface ServerLog {
   created_at: string;
 }
 
+const DEVKIT_SETTINGS_STORAGE_KEY = 'devkit_console_settings';
+
 export default function DevkitConsolePanel() {
   const [manager, setManager] = useState<any>(null);
   const [serverLogs, setServerLogs] = useState<ServerLog[]>([]);
@@ -21,6 +23,30 @@ export default function DevkitConsolePanel() {
   const [autoSync, setAutoSync] = useState(true);
   const [logFilter, setLogFilter] = useState<'all' | 'trace' | 'error' | 'none'>('all');
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Load settings from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(DEVKIT_SETTINGS_STORAGE_KEY);
+      if (saved) {
+        const settings = JSON.parse(saved);
+        if (typeof settings.autoSync === 'boolean') setAutoSync(settings.autoSync);
+        if (settings.logFilter) setLogFilter(settings.logFilter);
+      }
+    } catch (err) {
+      console.error('Failed to load DevKit settings:', err);
+    }
+  }, []);
+
+  // Save settings to localStorage whenever they change
+  useEffect(() => {
+    try {
+      const settings = { autoSync, logFilter };
+      localStorage.setItem(DEVKIT_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+    } catch (err) {
+      console.error('Failed to save DevKit settings:', err);
+    }
+  }, [autoSync, logFilter]);
 
   useEffect(() => {
     const debugManager = initDebugManager();
