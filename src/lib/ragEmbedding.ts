@@ -2,6 +2,41 @@
 
 import { logError } from './logger';
 
+async function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries = 3,
+  baseDelay = 1000
+): Promise<T> {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      const message = lastError.message;
+
+      // Check if it's a rate limit error (429)
+      const isRateLimit = message.includes('429') || message.includes('RESOURCE_EXHAUSTED');
+
+      if (!isRateLimit || attempt === maxRetries) {
+        throw lastError;
+      }
+
+      // Exponential backoff: 1s, 2s, 4s
+      const delay = baseDelay * Math.pow(2, attempt);
+      console.log(`[RAG-EMBED] Rate limit hit, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`);
+      await sleep(delay);
+    }
+  }
+
+  throw lastError;
+}
+
 async function extractEmbedding(result: unknown, idx: number = 0): Promise<number[]> {
   // Handle different response formats from Pinecone SDK
   let embedding: number[] | undefined;
@@ -48,16 +83,18 @@ async function extractEmbedding(result: unknown, idx: number = 0): Promise<numbe
 
 export async function embedPassage(text: string): Promise<number[]> {
   try {
-    const { getPineconeClient } = await import('./pinecone');
-    const pc = getPineconeClient();
+    return await withRetry(async () => {
+      const { getPineconeClient } = await import('./pinecone');
+      const pc = getPineconeClient();
 
-    const result = await pc.inference.embed({
-      model: 'multilingual-e5-large',
-      inputs: [text],
-      parameters: { input_type: 'passage', truncate: 'END' },
-    }) as unknown;
+      const result = await pc.inference.embed({
+        model: 'multilingual-e5-large',
+        inputs: [text],
+        parameters: { input_type: 'passage', truncate: 'END' },
+      }) as unknown;
 
-    return extractEmbedding(result, 0);
+      return extractEmbedding(result, 0);
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error('[RAG-EMBED] embedPassage error:', message);
@@ -68,16 +105,18 @@ export async function embedPassage(text: string): Promise<number[]> {
 
 export async function embedQuery(text: string): Promise<number[]> {
   try {
-    const { getPineconeClient } = await import('./pinecone');
-    const pc = getPineconeClient();
+    return await withRetry(async () => {
+      const { getPineconeClient } = await import('./pinecone');
+      const pc = getPineconeClient();
 
-    const result = await pc.inference.embed({
-      model: 'multilingual-e5-large',
-      inputs: [text],
-      parameters: { input_type: 'query', truncate: 'END' },
-    }) as unknown;
+      const result = await pc.inference.embed({
+        model: 'multilingual-e5-large',
+        inputs: [text],
+        parameters: { input_type: 'query', truncate: 'END' },
+      }) as unknown;
 
-    return extractEmbedding(result, 0);
+      return extractEmbedding(result, 0);
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error('[RAG-EMBED] embedQuery error:', message);
@@ -90,21 +129,23 @@ export async function embedPassagesBatch(texts: string[]): Promise<number[][]> {
   try {
     if (texts.length === 0) return [];
 
-    const { getPineconeClient } = await import('./pinecone');
-    const pc = getPineconeClient();
+    return await withRetry(async () => {
+      const { getPineconeClient } = await import('./pinecone');
+      const pc = getPineconeClient();
 
-    const result = await pc.inference.embed({
-      model: 'multilingual-e5-large',
-      inputs: texts,
-      parameters: { input_type: 'passage', truncate: 'END' },
-    }) as unknown;
+      const result = await pc.inference.embed({
+        model: 'multilingual-e5-large',
+        inputs: texts,
+        parameters: { input_type: 'passage', truncate: 'END' },
+      }) as unknown;
 
-    const embeddings: number[][] = [];
-    for (let i = 0; i < texts.length; i++) {
-      embeddings.push(await extractEmbedding(result, i));
-    }
+      const embeddings: number[][] = [];
+      for (let i = 0; i < texts.length; i++) {
+        embeddings.push(await extractEmbedding(result, i));
+      }
 
-    return embeddings;
+      return embeddings;
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error('[RAG-EMBED] embedPassagesBatch error:', message);
