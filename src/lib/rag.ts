@@ -38,27 +38,42 @@ export const retrieveRelevantDocuments = async (
     const regulationNum = extractRegulationNumber(query);
     if (regulationNum) {
       console.log(`[RAG] 🔍 Found regulation number: ${regulationNum}`);
-      // Search for exact regulation number - try multiple patterns
-      // Patterns: "25.", "25 ", "25\n", etc.
+      // Search for exact regulation number - look for the number with various separators
+      const searchPattern = `%${regulationNum}%`;
+
       const { data: regDocs, error: regError } = await supabase
         .from('rag_documents')
         .select('id, title, content, source')
-        .or(`content.ilike.%${regulationNum}.,content.ilike.%${regulationNum} ,content.ilike.%${regulationNum}%תקנה%`)
-        .limit(limit);
+        .ilike('content', searchPattern)
+        .limit(limit * 2); // Get more to filter
+
+      console.log(`[RAG] Regulation search (pattern: "${searchPattern}"): ${regError ? `Error: ${regError.message}` : `Found ${regDocs?.length || 0} rows`}`);
 
       if (!regError && regDocs && regDocs.length > 0) {
-        console.log(`[RAG] ✅ Found ${regDocs.length} documents with regulation ${regulationNum}`);
-        results = regDocs.map((doc: any, idx: number) => ({
-          id: doc.id,
-          title: doc.title,
-          content: doc.content,
-          source: doc.source,
-          similarity: 1.0 - idx * 0.05, // High similarity for exact matches
-        }));
+        // Filter for rows that actually contain the regulation number in the right format
+        const filtered = regDocs.filter((doc: any) => {
+          const regex = new RegExp(`\\b${regulationNum}[.\\s]`, 'g');
+          return regex.test(doc.content);
+        });
 
-        if (results.length >= limit) {
-          return results.slice(0, limit);
+        if (filtered.length > 0) {
+          console.log(`[RAG] ✅ Filtered to ${filtered.length} documents with תקנה ${regulationNum}`);
+          results = filtered.slice(0, limit).map((doc: any, idx: number) => ({
+            id: doc.id,
+            title: doc.title,
+            content: doc.content,
+            source: doc.source,
+            similarity: 1.0 - idx * 0.05, // High similarity for exact matches
+          }));
+
+          if (results.length >= limit) {
+            return results.slice(0, limit);
+          }
+        } else {
+          console.log(`[RAG] ⚠️ Pattern match found rows but no regex match for תקנה ${regulationNum}`);
         }
+      } else if (regError) {
+        console.log(`[RAG] ⚠️ Regulation search error: ${regError.message}`);
       }
     }
 
