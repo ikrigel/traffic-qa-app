@@ -53,18 +53,27 @@ Examples:
 חניה
 14. חניה בדרך עירונית...
 
-CRITICAL INSTRUCTIONS:
-1. ALWAYS search documents for any regulation number mentioned
-2. When you see a regulation number (e.g., "25"), quote the COMPLETE text under that number
-3. Quote exactly as it appears - include title, number, and full regulation text
-4. If a regulation number is in the documents, you MUST find and cite it
-5. Do NOT say "not found" if the regulation text exists in the provided documents
-6. Quote the exact formatting and wording${regulationHint}
+CRITICAL RULES:
+1. When user asks about a SPECIFIC regulation (e.g., "מהי תקנה 25?"):
+   - ALWAYS quote the regulation text EXACTLY as it appears in documents
+   - Include: [TITLE] + [NUMBER]. [TEXT]
+   - Example response: "בקיאות ברכב\n25. לא ינהג אדם רכב אלא אם הוא בקי בהפעלתו ובשימוש בו."
+   - DO NOT paraphrase, explain, or summarize - quote exactly
+   - DO NOT say "it appears to discuss..." or "it mentions that..." - just quote
+
+2. When user asks a GENERAL question (e.g., "מהי הכרת רכב?"):
+   - Find relevant regulations and quote them
+   - Can provide brief explanation if needed
+
+3. MANDATORY:
+   - If a regulation number exists in documents, MUST quote it verbatim
+   - Never refuse when regulation text is available
+   - Respond ONLY in Hebrew${regulationHint}
 
 CONTEXT DOCUMENTS:
 ${contextString}
 
-Now answer based ONLY on the documents. Respond in Hebrew.`;
+Now answer based ONLY on the documents.`;
     } else {
       systemPrompt = `You are a helpful assistant specializing in Israeli traffic laws. Answer the user's question to the best of your knowledge. If you cannot answer, say "I don't have enough information to answer this question." Respond in Hebrew.\n\nNote: No reference documents are currently available.`;
     }
@@ -99,13 +108,15 @@ Now answer based ONLY on the documents. Respond in Hebrew.`;
 
     await appLog({ source: 'chat/route', message: `✅ Generated response via ${result.provider}`, context: { keySource: result.keySource } });
 
+    // Deduplicate sources by title (same document shouldn't appear multiple times)
+    const uniqueSources = Array.from(
+      new Map(documents.map(d => [d.title, { id: d.id, title: d.title }])).values()
+    );
+
     return NextResponse.json({
       answer: result.text,
       keySource: result.keySource,
-      sources: documents.map(d => ({
-        id: d.id,
-        title: d.title,
-      })),
+      sources: uniqueSources,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to process chat message';
