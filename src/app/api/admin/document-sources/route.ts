@@ -62,9 +62,12 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Source creation error:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to create source' },
-      { status: 500 }
-    );
+    let errorMsg = 'Failed to create source';
+    if (error instanceof Error) {
+      errorMsg = error.message;
+    } else if (typeof error === 'object' && error !== null) {
+      errorMsg = JSON.stringify(error);
+    }
+    return NextResponse.json({ error: errorMsg }, { status: 500 });
   }
 }

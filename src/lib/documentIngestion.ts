@@ -178,12 +178,24 @@ export async function ingestDocumentSource(
 
     return { success: true, chunks: result.chunksCreated, tokens: estimatedTokens };
   } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
+    let msg = 'Unknown error';
+    if (error instanceof Error) {
+      msg = error.message;
+    } else if (typeof error === 'object' && error !== null) {
+      msg = JSON.stringify(error);
+    } else if (typeof error === 'string') {
+      msg = error;
+    }
+
     console.error('[INGEST] ❌ Error:', msg);
-    await logError({
-      source: 'documentIngestion.ingestDocumentSource',
-      message: msg,
-    });
+    try {
+      await logError({
+        source: 'documentIngestion.ingestDocumentSource',
+        message: msg,
+      });
+    } catch (logErr) {
+      console.error('[INGEST] Failed to log error:', logErr);
+    }
 
     return { success: false, chunks: 0, tokens: 0, error: msg };
   }
