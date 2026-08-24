@@ -43,7 +43,7 @@ export const retrieveRelevantDocuments = async (
       const { data: regDocs, error: regError } = await supabase
         .from('rag_documents')
         .select('id, title, content, source')
-        .or(`content.ilike.%${regulationNum}.,content.ilike.%${regulationNum}\ ,content.ilike.%${regulationNum}%תקנה%`)
+        .or(`content.ilike.%${regulationNum}.,content.ilike.%${regulationNum} ,content.ilike.%${regulationNum}%תקנה%`)
         .limit(limit);
 
       if (!regError && regDocs && regDocs.length > 0) {
