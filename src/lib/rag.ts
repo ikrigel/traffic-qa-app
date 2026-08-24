@@ -12,6 +12,12 @@ export interface RetrievedDocument {
   similarity: number;
 }
 
+// Extract regulation number from query (e.g., "תקנה 25" or "תקנה 25א")
+function extractRegulationNumber(query: string): number | null {
+  const match = query.match(/תקנה\s+(\d+)/);
+  return match ? parseInt(match[1], 10) : null;
+}
+
 export const retrieveRelevantDocuments = async (
   query: string,
   limit = 5
@@ -21,6 +27,37 @@ export const retrieveRelevantDocuments = async (
     console.log('[RAG] Query:', query.substring(0, 50));
     console.log('[RAG] Limit:', limit);
 
+    const supabase = getServiceSupabase();
+    let results: RetrievedDocument[] = [];
+
+    // Check if query contains a regulation number
+    const regulationNum = extractRegulationNumber(query);
+    if (regulationNum) {
+      console.log(`[RAG] 🔍 Found regulation number: תקנה ${regulationNum}`);
+      // Search for exact regulation number first
+      const { data: regDocs, error: regError } = await supabase
+        .from('rag_documents')
+        .select('id, title, content, source')
+        .ilike('content', `%תקנה ${regulationNum}%`)
+        .limit(limit);
+
+      if (!regError && regDocs && regDocs.length > 0) {
+        console.log(`[RAG] ✅ Found ${regDocs.length} documents with תקנה ${regulationNum}`);
+        results = regDocs.map((doc: any, idx: number) => ({
+          id: doc.id,
+          title: doc.title,
+          content: doc.content,
+          source: doc.source,
+          similarity: 1.0 - idx * 0.05, // High similarity for exact matches
+        }));
+
+        if (results.length >= limit) {
+          return results.slice(0, limit);
+        }
+      }
+    }
+
+    // Fallback to semantic search for remaining results or if no regulation number
     let queryEmbedding: number[];
     try {
       queryEmbedding = await embedQuery(query);
@@ -29,21 +66,25 @@ export const retrieveRelevantDocuments = async (
     } catch (embedError) {
       const embedMsg = embedError instanceof Error ? embedError.message : String(embedError);
       console.error('[RAG] ❌ EMBEDDING FAILED:', embedMsg);
+      if (results.length > 0) {
+        console.log('[RAG] Returning regulation search results despite embedding failure');
+        return results;
+      }
       throw new Error(`Embedding failed: ${embedMsg}`);
     }
 
-    console.log('[RAG] Querying Pinecone...');
-    const matches = await queryVectors(queryEmbedding, limit);
+    console.log('[RAG] Querying Pinecone for semantic matches...');
+    const semanticLimit = limit - results.length;
+    const matches = await queryVectors(queryEmbedding, semanticLimit > 0 ? semanticLimit : limit);
     console.log('[RAG] ✅ Pinecone returned', matches.length, 'documents');
 
     if (matches.length === 0) {
-      console.log('[RAG] No documents found');
-      return [];
+      console.log('[RAG] No semantic matches found');
+      return results;
     }
 
     // Fetch full document content from Supabase using IDs from Pinecone
     const docIds = matches.map(m => m.id);
-    const supabase = getServiceSupabase();
     const { data: docs, error } = await supabase
       .from('rag_documents')
       .select('id, title, content, source')
@@ -53,7 +94,7 @@ export const retrieveRelevantDocuments = async (
 
     const docMap = new Map(docs.map((d: any) => [d.id, d]));
 
-    return matches
+    const semanticResults = matches
       .map((match, index) => {
         const doc = docMap.get(match.id);
         if (!doc) return null;
@@ -62,10 +103,20 @@ export const retrieveRelevantDocuments = async (
           title: doc.title,
           content: doc.content,
           source: doc.source,
-          similarity: match.score || (1 - index * 0.1),
+          similarity: match.score || (0.8 - index * 0.1),
         };
       })
       .filter((d): d is RetrievedDocument => d !== null);
+
+    // Combine regulation search results with semantic results, avoiding duplicates
+    const combinedIds = new Set(results.map(r => r.id));
+    for (const result of semanticResults) {
+      if (!combinedIds.has(result.id)) {
+        results.push(result);
+      }
+    }
+
+    return results.slice(0, limit);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Document retrieval failed';
     console.error('[RAG] ❌ ERROR:', message);
