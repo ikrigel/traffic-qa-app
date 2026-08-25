@@ -1,6 +1,7 @@
 /* eslint-disable react/no-unescaped-entities */
 'use client';
 
+import { useState } from 'react';
 import { APP_VERSION } from '@/lib/constants';
 
 interface AboutModalProps {
@@ -9,7 +10,33 @@ interface AboutModalProps {
 }
 
 export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
+  const [copied, setCopied] = useState(false);
+
   if (!isOpen) return null;
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://traffic-qa-app.vercel.app';
+  const shareText = 'דיני תעבורה - אפליקציה למידה חכמה בעברית';
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(appUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  const handleShareWhatsApp = () => {
+    const message = encodeURIComponent(`${shareText}\n${appUrl}`);
+    window.open(`https://wa.me/?text=${message}`, '_blank');
+  };
+
+  const handleShareEmail = () => {
+    const subject = encodeURIComponent(shareText);
+    const body = encodeURIComponent(`${shareText}\n\n${appUrl}`);
+    window.open(`mailto:?subject=${subject}&body=${body}`, '_blank');
+  };
 
   const links = [
     {
@@ -66,6 +93,36 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
                   <span className="font-semibold">הנושא:</span> דיני תעבורה בישראל (דיני תעבורה, הנחיות, בטיחות דרכים)
                 </p>
               </div>
+            </div>
+          </section>
+
+          {/* Share Section */}
+          <section className="border-b pb-6">
+            <h3 className="text-xl font-semibold text-blue-600 mb-4">📤 שתף את האפליקציה</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <button
+                onClick={handleCopyLink}
+                className="flex flex-col items-center justify-center p-4 border-2 border-gray-200 rounded-lg hover:border-green-400 hover:bg-green-50 transition text-gray-700 hover:text-green-700"
+              >
+                <span className="text-2xl mb-2">📋</span>
+                <span className="font-semibold text-sm">{copied ? 'הועתק!' : 'העתק קישור'}</span>
+              </button>
+
+              <button
+                onClick={handleShareWhatsApp}
+                className="flex flex-col items-center justify-center p-4 border-2 border-gray-200 rounded-lg hover:border-green-500 hover:bg-green-50 transition text-gray-700 hover:text-green-700"
+              >
+                <span className="text-2xl mb-2">💬</span>
+                <span className="font-semibold text-sm">שלח ב-WhatsApp</span>
+              </button>
+
+              <button
+                onClick={handleShareEmail}
+                className="flex flex-col items-center justify-center p-4 border-2 border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition text-gray-700 hover:text-blue-700"
+              >
+                <span className="text-2xl mb-2">📧</span>
+                <span className="font-semibold text-sm">שלח בדוא״ל</span>
+              </button>
             </div>
           </section>
 
