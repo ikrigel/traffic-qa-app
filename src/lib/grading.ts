@@ -47,25 +47,34 @@ export const gradeUserAnswer = async (input: GradingInput): Promise<GradingResul
     const faithfulness = metrics.faithfulness ?? 0;
     const relevance = metrics.relevance ?? 0;
     const coherence = metrics.coherence ?? 0;
+    const avgScore = (faithfulness + relevance + coherence) / 3;
 
-    console.log('[GRADING] Thresholds - faith:', faithfulness, 'rel:', relevance, 'coh:', coherence);
+    console.log('[GRADING] Scores - faith:', faithfulness, 'rel:', relevance, 'coh:', coherence, 'avg:', avgScore);
 
     let verdict: 'correct' | 'partial' | 'incorrect' = 'incorrect';
 
-    // If any main metrics are exactly 1.0, it's definitely correct
-    if (faithfulness >= 0.95 || relevance >= 0.95) {
+    // CORRECT: High scores overall
+    if (faithfulness >= 0.9 || relevance >= 0.9) {
+      // Excellent on main metrics
+      verdict = 'correct';
+    } else if (faithfulness >= 0.75 && relevance >= 0.75 && coherence >= 0.7) {
+      // Good scores across the board
+      verdict = 'correct';
+    } else if (avgScore >= 0.8) {
+      // Strong average score
       verdict = 'correct';
     }
-    // High scores on multiple metrics = correct
-    else if (faithfulness > 0.8 && relevance > 0.75 && coherence > 0.75) {
-      verdict = 'correct';
-    }
-    // Medium scores on multiple metrics = partial
-    else if ((faithfulness > 0.65 || relevance > 0.65) && coherence > 0.6) {
+    // PARTIAL: Medium scores - shows understanding but missing details
+    else if (avgScore >= 0.6) {
+      verdict = 'partial';
+    } else if ((faithfulness >= 0.55 || relevance >= 0.55) && coherence >= 0.5) {
+      verdict = 'partial';
+    } else if (faithfulness >= 0.5 || relevance >= 0.5) {
+      // Any main metric above 0.5 means some correct content
       verdict = 'partial';
     }
 
-    console.log('[GRADING] Verdict determined:', verdict);
+    console.log('[GRADING] Verdict determined:', verdict, '(avg score:', avgScore.toFixed(2), ')');
 
     let feedback = 'לא ניתן ליצור משוב כרגע';
     try {
