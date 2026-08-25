@@ -290,10 +290,93 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
           <p className="mb-3">{result.feedback}</p>
 
           {result.metrics && (
-            <div className="text-xs space-y-1 mb-3 opacity-75">
-              {Object.entries(result.metrics).map(([key, value]) => (
-                <p key={key}>{key}: {typeof value === 'number' ? value.toFixed(2) : value}</p>
-              ))}
+            <div className="bg-white rounded-lg p-4 mb-4 border border-gray-200 space-y-3">
+              <div className="text-sm font-semibold text-gray-700">📊 Detailed Scores</div>
+
+              {/* Faithfulness */}
+              {result.metrics.faithfulness !== undefined && (
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-700">Faithfulness</span>
+                    <span className="text-sm font-bold">{(result.metrics.faithfulness * 100).toFixed(0)}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                    <div
+                      className="h-full bg-blue-500 transition-all duration-300"
+                      style={{ width: `${Math.min(100, (result.metrics.faithfulness * 100))}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500">How well your answer matches the correct information</p>
+                </div>
+              )}
+
+              {/* Relevance */}
+              {result.metrics.relevance !== undefined && (
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-700">Relevance</span>
+                    <span className="text-sm font-bold">{(result.metrics.relevance * 100).toFixed(0)}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                    <div
+                      className="h-full bg-green-500 transition-all duration-300"
+                      style={{ width: `${Math.min(100, (result.metrics.relevance * 100))}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500">How relevant your answer is to the question</p>
+                </div>
+              )}
+
+              {/* Coherence */}
+              {result.metrics.coherence !== undefined && (
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-700">Coherence</span>
+                    <span className="text-sm font-bold">{(result.metrics.coherence * 100).toFixed(0)}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                    <div
+                      className="h-full bg-purple-500 transition-all duration-300"
+                      style={{ width: `${Math.min(100, (result.metrics.coherence * 100))}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500">How clear and well-structured your answer is</p>
+                </div>
+              )}
+
+              {/* Context Precision */}
+              {result.metrics.contextPrecision !== undefined && (
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-700">Context Precision</span>
+                    <span className="text-sm font-bold">{(result.metrics.contextPrecision * 100).toFixed(0)}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                    <div
+                      className="h-full bg-orange-500 transition-all duration-300"
+                      style={{ width: `${Math.min(100, (result.metrics.contextPrecision * 100))}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500">Precision of the source material retrieved</p>
+                </div>
+              )}
+
+              {/* Context Recall */}
+              {result.metrics.contextRecall !== undefined && (
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-700">Context Recall</span>
+                    <span className="text-sm font-bold">{(result.metrics.contextRecall * 100).toFixed(0)}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                    <div
+                      className="h-full bg-pink-500 transition-all duration-300"
+                      style={{ width: `${Math.min(100, (result.metrics.contextRecall * 100))}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500">Completeness of the source material retrieved</p>
+                </div>
+              )}
             </div>
           )}
 
