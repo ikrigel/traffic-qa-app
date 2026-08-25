@@ -24,12 +24,13 @@ export default function UnifiedLogsPanel() {
   const [refreshRate, setRefreshRate] = useState(2000);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
-  const [loggingEnabled, setLoggingEnabled] = useState(true);
+  const [loggingEnabled, setLoggingEnabled] = useState(false);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
   const { logs: serverLogs, loading, error, refetch } = useAdminLogs(level === 'all' ? 'all' : level);
   const debugManagerRef = useRef<any>(null);
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Load settings from localStorage on mount
+  // Load settings from localStorage on mount - this is the source of truth
   useEffect(() => {
     try {
       const saved = localStorage.getItem(DEBUG_SETTINGS_STORAGE_KEY);
@@ -41,42 +42,27 @@ export default function UnifiedLogsPanel() {
         if (settings.refreshRate) setRefreshRate(settings.refreshRate);
         if (typeof settings.loggingEnabled === 'boolean') setLoggingEnabled(settings.loggingEnabled);
       }
+      setSettingsLoaded(true);
     } catch (err) {
       console.error('Failed to load debug settings:', err);
+      setSettingsLoaded(true);
     }
   }, []);
 
   // Save settings to localStorage whenever they change
   useEffect(() => {
+    if (!settingsLoaded) return;
     try {
       const settings = { level, tab, autoRefresh, refreshRate, loggingEnabled };
       localStorage.setItem(DEBUG_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
     } catch (err) {
       console.error('Failed to save debug settings:', err);
     }
-  }, [level, tab, autoRefresh, refreshRate, loggingEnabled]);
+  }, [level, tab, autoRefresh, refreshRate, loggingEnabled, settingsLoaded]);
 
   useEffect(() => {
     const manager = initDebugManager();
     debugManagerRef.current = manager;
-  }, []);
-
-  // Sync logging status with server on mount
-  useEffect(() => {
-    const checkLoggingStatus = async () => {
-      try {
-        const response = await fetch('/api/admin/logging/toggle', {
-          credentials: 'include',
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setLoggingEnabled(data.loggingEnabled);
-        }
-      } catch (err) {
-        console.error('Failed to check logging status:', err);
-      }
-    };
-    checkLoggingStatus();
   }, []);
 
   const handleToggleLogging = async () => {
@@ -89,9 +75,9 @@ export default function UnifiedLogsPanel() {
         credentials: 'include',
         body: JSON.stringify({ enabled: newState }),
       });
-      if (response.ok) {
-        const data = await response.json();
-        setLoggingEnabled(data.loggingEnabled);
+      if (!response.ok) {
+        console.error('Failed to toggle logging on server');
+        setLoggingEnabled(!newState);
       }
     } catch (err) {
       console.error('Failed to toggle logging:', err);
