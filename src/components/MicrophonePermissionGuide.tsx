@@ -139,7 +139,7 @@ export default function MicrophonePermissionGuide({ isOpen, onClose, onRetry }: 
 
         {/* Footer */}
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-4 text-center">
-          Need more help? Make sure your browser is up to date and try a different browser if this doesn't work.
+          Need more help? Make sure your browser is up to date and try a different browser if this doesn&#39;t work.
         </p>
       </div>
     </div>
