@@ -476,7 +476,7 @@ When a file approaches 250 lines:
 
 ## Version Management
 
-**Current Version**: 1.1.0 (see `package.json` and `src/lib/constants.ts`)
+**Current Version**: 1.14.0 (see `package.json` and `src/lib/constants.ts`)
 
 ### Semantic Versioning Rules
 Follow [Semantic Versioning](https://semver.org/) for all releases:
@@ -521,7 +521,7 @@ Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>"
 
 ## Current Implementation Status
 
-### ✅ Fully Implemented (v1.13.0)
+### ✅ Fully Implemented (v1.14.0)
 
 **Authentication & Security:**
 - ✅ Gmail OAuth authentication with Google consent flow
@@ -535,9 +535,11 @@ Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>"
 - ✅ Role-based access control (403 for unauthorized users)
 - ✅ User Management: list, change roles, delete users (protect hardcoded super_admin)
 - ✅ RAG Documents: upload with title/source, list with embedding status
-- ✅ Debug Logs: real-time log viewer with level filtering (info/warn/error)
+- ✅ Debug Logs: real-time log viewer with level filtering (info/warn/error) + localStorage persistence
 - ✅ RAG Evaluation: manual pipeline testing + user test attempts feed with verdicts
 - ✅ DevKit Console: placeholder for live client-side debugging (super_admin only)
+- ✅ Course Management (Q1): Create/manage courses, link questions to courses (v1.14.0)
+- ✅ Multiple Choice Questions: Admin-created questions with multiple choice/free text support (v1.14.0)
 - ✅ All admin hooks: useAdminUsers, useAdminRagDocuments, useAdminLogs, useAdminEvaluations, useAdminTestAttempts
 - ✅ Loading states, error handling, empty states, data refresh buttons
 
@@ -545,23 +547,23 @@ Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>"
 - ✅ Chat Assistant: RAG-grounded Q&A with source citation (bottom-right float)
 - ✅ Test Answer Input: typed or voice input with AI grading (בחן אותי button)
 - ✅ Web Speech API: voice recognition in Hebrew (he-IL locale)
-- ✅ Answer Grading: RAGAS evaluation with metrics and Hebrew feedback
-- ✅ Test History: admin can see all user test attempts with verdicts
+- ✅ Answer Grading: RAGAS evaluation with 5 detailed metrics and progress bars (v1.14.0)
+- ✅ Test History: admin can see all user test attempts with verdicts and detailed scores
 
-**Infrastructure (v1.13.0):**
-- ✅ Supabase database (PostgreSQL) for users, sessions, documents
-- ✅ **Pinecone vector database** for RAG embeddings (768D vectors, fast similarity search)
+**Infrastructure (v1.14.0):**
+- ✅ Supabase database (PostgreSQL) for users, sessions, documents, courses, questions
+- ✅ **Pinecone vector database** for RAG embeddings (1024D multilingual-e5-large vectors, fast similarity search)
 - ✅ Google Gemini API: gemini-embedding-001 (768D vectors), multi-provider generation fallback
 - ✅ RAGAS evaluation engine with 5 metrics (Faithfulness, Relevance, Coherence, Context Precision/Recall)
 - ✅ Server-side debug logging with context capture
 - ✅ JWT session verification with fresh role lookup on every request
 - ✅ Voice-to-text with Web Speech API (Hebrew support, explicit microphone permission)
-- ✅ Admin panel tab memory (localStorage persistence across page refresh)
+- ✅ Admin panel tab memory + debug logging state persistence via localStorage
 
-**Testing (v1.13.0):**
-- ✅ Admin operations tests (user mgmt, RAG docs, logging, test tracking)
+**Testing (v1.14.0):**
+- ✅ Admin operations tests (user mgmt, RAG docs, logging, test tracking, courses)
 - ✅ Chat assistant tests (message structure, validation, XSS protection)
-- ✅ Answer grading tests (verdicts, metrics, voice input, Hebrew support)
+- ✅ Answer grading tests (verdicts, detailed metrics, voice input, Hebrew support)
 - ✅ Pinecone connection tests (query, upsert, delete operations)
 - ✅ RAG pipeline tests (embedding, retrieval, generation)
 
@@ -569,6 +571,7 @@ Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>"
 - ✅ CLAUDE.md with complete architecture and troubleshooting
 - ✅ Semantic versioning (MAJOR.MINOR.PATCH)
 - ✅ 250-line max file size enforced across all components
+- ✅ Help and About modals with updated feature descriptions
 
 ### 🔄 Future Enhancements
 - Rate limiting on auth endpoints

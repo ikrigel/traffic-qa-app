@@ -82,12 +82,15 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
             <div className="space-y-3 text-gray-700">
               <p className="leading-relaxed">
                 אפליקציה חדישה וחינמית ללימוד דיני תעבורה בעברית. המערכת משלבת בינה מלאכותית
-                כדי לתת משוב ישיר על תשובות ולעזור בלימוד יעיל וממוקד.
+                כדי לתת משוב ישיר על תשובות, ניהול קורסים גמיש, והערכה מפורטת של ידע.
               </p>
               <div className="space-y-2">
                 <p>
+                  <span className="font-semibold">תכונות:</span> קורסים, שאלות בחירה מרובה, הערכה עם 5 מדדים, צ'אט AI, תרגול קולי
+                </p>
+                <p>
                   <span className="font-semibold">טכנולוגיות:</span> Next.js 14, React 18, TypeScript, Tailwind CSS,
-                  Google Gemini AI, Supabase
+                  Google Gemini AI, Supabase, Pinecone RAG
                 </p>
                 <p>
                   <span className="font-semibold">הנושא:</span> דיני תעבורה בישראל (דיני תעבורה, הנחיות, בטיחות דרכים)
