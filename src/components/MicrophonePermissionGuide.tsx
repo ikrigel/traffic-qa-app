@@ -30,15 +30,15 @@ export default function MicrophonePermissionGuide({ isOpen, onClose, onRetry }: 
     desktop: {
       title: '🖥️ Desktop Instructions',
       steps: [
-        'Look for the microphone icon (🎤) in your browser\'s address bar',
-        'Click on the microphone icon or the permission prompt',
-        'Select "Allow" to grant microphone access',
+        'Look for the lock icon or camera/mic icon in your browser\'s address bar',
+        'Click on it to see site permissions',
+        'Find "Microphone" and change it from "Block" to "Allow"',
         'Refresh the page and try the voice input again',
       ],
       browsers: [
-        { name: 'Chrome/Edge', steps: 'Address bar → Camera/Mic icon → Allow' },
-        { name: 'Firefox', steps: 'Address bar → Microphone icon → Allow' },
-        { name: 'Safari', steps: 'Preferences → Security → Microphone → Allow website' },
+        { name: 'Chrome/Edge', steps: 'Click lock/camera icon in address bar → Microphone → Allow' },
+        { name: 'Firefox', steps: 'Click lock icon in address bar → Microphone → Allow' },
+        { name: 'Safari', steps: 'Develop → Microphone → Allow website (or System Preferences)' },
       ],
     },
     ios: {

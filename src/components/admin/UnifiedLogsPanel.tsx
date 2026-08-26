@@ -170,12 +170,18 @@ export default function UnifiedLogsPanel() {
         credentials: 'include',
         body: JSON.stringify({ logIds: ids }),
       });
-      if (response.ok) {
-        setSelected(new Set());
-        refetch();
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || 'Failed to delete logs');
       }
+      const data = await response.json();
+      alert(`✅ Deleted ${data.deleted} log(s)`);
+      setSelected(new Set());
+      refetch();
     } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Delete failed';
       console.error('Delete failed:', err);
+      alert(`❌ Error: ${msg}`);
     } finally {
       setDeleting(false);
     }
