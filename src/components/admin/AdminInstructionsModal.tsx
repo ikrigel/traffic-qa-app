@@ -42,7 +42,7 @@ export default function AdminInstructionsModal({ isOpen, onClose }: AdminInstruc
             <h3 className="text-lg font-bold text-indigo-600 mb-3">🎓 Courses Tab</h3>
             <p className="text-gray-700 mb-3">Create and manage learning courses</p>
             <ul className="space-y-2 text-sm text-gray-700 ml-4">
-              <li>✅ <strong>Create courses</strong> - Add new courses like "דיני תעבורה" or "נהלי רישוי"</li>
+              <li>✅ <strong>Create courses</strong> - Add new courses like &quot;דיני תעבורה&quot; or &quot;נהלי רישוי&quot;</li>
               <li>✅ <strong>Add descriptions</strong> - Help users understand the course</li>
               <li>✅ <strong>Organize questions</strong> - Link questions to courses</li>
               <li>💡 <strong>Tip:</strong> Create multiple courses to organize content by topic</li>
@@ -110,7 +110,7 @@ export default function AdminInstructionsModal({ isOpen, onClose }: AdminInstruc
             <ul className="space-y-2 text-sm text-gray-700 ml-4">
               <li>✅ <strong>View test attempts</strong> - See all user answers and verdicts</li>
               <li>✅ <strong>View RAGAS metrics</strong> - Understand grading quality</li>
-              <li>✅ <strong>Filter by user</strong> - Find specific user's attempts</li>
+              <li>✅ <strong>Filter by user</strong> - Find specific user&apos;s attempts</li>
             </ul>
           </section>
 

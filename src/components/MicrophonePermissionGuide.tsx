@@ -30,9 +30,9 @@ export default function MicrophonePermissionGuide({ isOpen, onClose, onRetry }: 
     desktop: {
       title: '🖥️ Desktop Instructions',
       steps: [
-        'Look for the lock icon or camera/mic icon in your browser\'s address bar',
+        'Look for the lock icon or camera/mic icon in your browser&apos;s address bar',
         'Click on it to see site permissions',
-        'Find "Microphone" and change it from "Block" to "Allow"',
+        'Find &quot;Microphone&quot; and change it from &quot;Block&quot; to &quot;Allow&quot;',
         'Refresh the page and try the voice input again',
       ],
       browsers: [
@@ -45,9 +45,9 @@ export default function MicrophonePermissionGuide({ isOpen, onClose, onRetry }: 
       title: '🍎 iPhone/iPad Instructions',
       steps: [
         'Go to Settings app',
-        'Scroll down and tap "Safari" (or your browser name)',
-        'Tap "Microphone"',
-        'Select "Allow"',
+        'Scroll down and tap &quot;Safari&quot; (or your browser name)',
+        'Tap &quot;Microphone&quot;',
+        'Select &quot;Allow&quot;',
         'Return to the app and try voice input again',
       ],
       note: 'You may need to allow permission when prompted by the browser first',
@@ -56,13 +56,13 @@ export default function MicrophonePermissionGuide({ isOpen, onClose, onRetry }: 
       title: '🤖 Android Instructions',
       steps: [
         'Open Settings app',
-        'Tap "Apps" or "Application Manager"',
+        'Tap &quot;Apps&quot; or &quot;Application Manager&quot;',
         'Find your browser (Chrome, Firefox, etc.)',
-        'Tap "Permissions"',
-        'Toggle "Microphone" to ON',
+        'Tap &quot;Permissions&quot;',
+        'Toggle &quot;Microphone&quot; to ON',
         'Return to the app and try voice input again',
       ],
-      note: 'You may see a permission prompt in the browser - tap "Allow"',
+      note: 'You may see a permission prompt in the browser - tap &quot;Allow&quot;',
     },
   };
 
