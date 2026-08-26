@@ -61,6 +61,45 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
 
     try {
       console.log('[VOICE] Starting speech recognition...');
+
+      // Pre-flight checks before Web Speech API
+      console.log('[VOICE] Running pre-flight diagnostics...');
+
+      // Check if browser tab has focus
+      if (!document.hasFocus()) {
+        console.warn('[VOICE] ⚠️ Browser tab does not have focus - this may cause "not-allowed" error');
+      } else {
+        console.log('[VOICE] ✅ Browser tab has focus');
+      }
+
+      // Check Permissions API state
+      if (navigator.permissions?.query) {
+        try {
+          const result = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+          console.log('[VOICE] Permissions API microphone state:', result.state);
+          if (result.state === 'denied') {
+            setVoiceError('Microphone permission is denied. Please allow access in browser settings.');
+            setShowPermissionGuide(true);
+            return;
+          }
+        } catch (err) {
+          console.warn('[VOICE] Could not query Permissions API:', err);
+        }
+      }
+
+      // Test getUserMedia first to ensure OS-level access works
+      try {
+        console.log('[VOICE] Testing getUserMedia access...');
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        console.log('[VOICE] ✅ getUserMedia succeeded - microphone is accessible');
+        stream.getTracks().forEach(track => track.stop());
+      } catch (err: any) {
+        console.error('[VOICE] ❌ getUserMedia failed:', err.name, err.message);
+        setVoiceError(`Microphone access failed: ${err.message}. This may be an OS-level permission issue.`);
+        setShowPermissionGuide(true);
+        return;
+      }
+
       recognitionRef.current = new SpeechRecognition();
       recognitionRef.current.lang = 'he-IL';
       recognitionRef.current.continuous = false;
