@@ -9,6 +9,7 @@ import HelpModal from '@/components/HelpModal';
 import AboutModal from '@/components/AboutModal';
 import SettingsModal from '@/components/SettingsModal';
 import ChatAssistant from '@/components/ChatAssistant';
+import TutorModal from '@/components/TutorModal';
 import UserProgressDisplay from '@/components/UserProgressDisplay';
 import { COURSES, getCourseQuestions } from '@/lib/questions';
 import { downloadPDF } from '@/lib/pdfGenerator';
@@ -20,6 +21,7 @@ export default function Home() {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isTutorOpen, setIsTutorOpen] = useState(false);
   const courseQuestions = getCourseQuestions(selectedCourseId);
   const selectedCourse = COURSES.find(c => c.id === selectedCourseId);
 
@@ -93,13 +95,13 @@ export default function Home() {
               </button>
             )}
             {user && (
-              <a
-                href="/tutor"
+              <button
+                onClick={() => setIsTutorOpen(true)}
                 className="px-2 sm:px-3 py-2 text-xs sm:text-sm bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 font-semibold whitespace-nowrap transition"
                 title="Tutor"
               >
                 🤖
-              </a>
+              </button>
             )}
             {user && user.role !== 'user' && (
               <a
@@ -207,6 +209,7 @@ export default function Home() {
       <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
       <AboutModal isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      <TutorModal isOpen={isTutorOpen} onClose={() => setIsTutorOpen(false)} />
     </main>
   );
 }

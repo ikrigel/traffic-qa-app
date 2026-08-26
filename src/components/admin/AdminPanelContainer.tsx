@@ -11,6 +11,7 @@ import DevkitConsolePanel from './DevkitConsolePanel';
 import CourseManagementPanel from './CourseManagementPanel';
 import MultipleChoiceQuestionsPanel from './MultipleChoiceQuestionsPanel';
 import DocumentSourcesPanel from './DocumentSourcesPanel';
+import AdminInstructionsModal from './AdminInstructionsModal';
 
 type TabType = 'users' | 'rag-docs' | 'logs' | 'evaluations' | 'ragas' | 'devkit' | 'courses' | 'questions' | 'sources';
 
@@ -22,6 +23,7 @@ const ADMIN_TAB_STORAGE_KEY = 'admin_panel_active_tab';
 
 export default function AdminPanelContainer({ user }: Props) {
   const [activeTab, setActiveTab] = useState<TabType>('users');
+  const [showInstructions, setShowInstructions] = useState(false);
   const isSuperAdmin = user.role === 'super_admin';
 
   // Load saved tab on mount
@@ -52,6 +54,16 @@ export default function AdminPanelContainer({ user }: Props) {
 
   return (
     <div className="space-y-6" data-testid="admin-panel">
+      {/* Help Button */}
+      <div className="flex justify-end">
+        <button
+          onClick={() => setShowInstructions(true)}
+          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition font-semibold text-sm"
+        >
+          📖 Admin Guide
+        </button>
+      </div>
+
       {/* Tab Navigation */}
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
         <div className="flex flex-wrap gap-0 border-b">
@@ -86,6 +98,9 @@ export default function AdminPanelContainer({ user }: Props) {
         {activeTab === 'ragas' && isSuperAdmin && <RagasEvaluationPanel />}
         {activeTab === 'devkit' && isSuperAdmin && <DevkitConsolePanel />}
       </div>
+
+      {/* Instructions Modal */}
+      <AdminInstructionsModal isOpen={showInstructions} onClose={() => setShowInstructions(false)} />
     </div>
   );
 }

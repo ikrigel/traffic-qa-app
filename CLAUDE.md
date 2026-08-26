@@ -476,7 +476,7 @@ When a file approaches 250 lines:
 
 ## Version Management
 
-**Current Version**: 1.14.0 (see `package.json` and `src/lib/constants.ts`)
+**Current Version**: 1.15.0 (see `package.json` and `src/lib/constants.ts`)
 
 ### Semantic Versioning Rules
 Follow [Semantic Versioning](https://semver.org/) for all releases:
@@ -521,7 +521,7 @@ Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>"
 
 ## Current Implementation Status
 
-### ✅ Fully Implemented (v1.14.0)
+### ✅ Fully Implemented (v1.15.0)
 
 **Authentication & Security:**
 - ✅ Gmail OAuth authentication with Google consent flow
@@ -538,8 +538,9 @@ Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>"
 - ✅ Debug Logs: real-time log viewer with level filtering (info/warn/error) + localStorage persistence
 - ✅ RAG Evaluation: manual pipeline testing + user test attempts feed with verdicts
 - ✅ DevKit Console: placeholder for live client-side debugging (super_admin only)
-- ✅ Course Management (Q1): Create/manage courses, link questions to courses (v1.14.0)
+- ✅ Course Management: Create/manage courses, link questions to courses (v1.14.0)
 - ✅ Multiple Choice Questions: Admin-created questions with multiple choice/free text support (v1.14.0)
+- ✅ **Admin Instructions Modal (v1.15.0)**: Comprehensive guide for each admin panel feature
 - ✅ All admin hooks: useAdminUsers, useAdminRagDocuments, useAdminLogs, useAdminEvaluations, useAdminTestAttempts
 - ✅ Loading states, error handling, empty states, data refresh buttons
 
@@ -549,6 +550,8 @@ Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>"
 - ✅ Web Speech API: voice recognition in Hebrew (he-IL locale)
 - ✅ Answer Grading: RAGAS evaluation with 5 detailed metrics and progress bars (v1.14.0)
 - ✅ Test History: admin can see all user test attempts with verdicts and detailed scores
+- ✅ **Tutor Modal (v1.15.0)**: 4 teaching modes (📚 Tutor/🎯 Quiz/✍️ Exam/📋 Summary) in rich modal
+- ✅ **Tutor Mode Info**: Clear descriptions and tips for each mode's purpose
 
 **Infrastructure (v1.14.0):**
 - ✅ Supabase database (PostgreSQL) for users, sessions, documents, courses, questions
