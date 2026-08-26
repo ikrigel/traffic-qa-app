@@ -148,13 +148,14 @@ export default function MultipleChoiceQuestionsPanel() {
         </div>
 
         <div className="bg-white rounded p-3 border border-purple-200">
-          <p className="text-sm font-semibold text-gray-700 mb-2">🎓 Link to Courses (optional)</p>
+          <p className="text-sm font-semibold text-gray-700 mb-2">🎓 Available in Courses (Select one or more)</p>
+          <p className="text-xs text-gray-500 mb-3">Questions can be assigned to multiple courses at once</p>
           {courses.length === 0 ? (
-            <p className="text-xs text-gray-500">No courses available</p>
+            <p className="text-xs text-red-600">⚠️ No courses available. Create courses first in the Courses tab.</p>
           ) : (
             <div className="space-y-2">
               {courses.map(course => (
-                <label key={course.id} className="flex items-center gap-2 cursor-pointer">
+                <label key={course.id} className="flex items-center gap-2 cursor-pointer hover:bg-purple-50 p-2 rounded">
                   <input
                     type="checkbox"
                     checked={selectedCourses.has(course.id)}
@@ -167,9 +168,10 @@ export default function MultipleChoiceQuestionsPanel() {
                       }
                       setSelectedCourses(newSelected);
                     }}
-                    className="w-4 h-4"
+                    className="w-4 h-4 accent-purple-600"
                   />
-                  <span className="text-sm text-gray-700">{course.title}</span>
+                  <span className="text-sm text-gray-700 font-medium">{course.title}</span>
+                  {selectedCourses.has(course.id) && <span className="text-xs text-green-600 ml-auto">✅ Selected</span>}
                 </label>
               ))}
             </div>
@@ -235,10 +237,24 @@ export default function MultipleChoiceQuestionsPanel() {
               <div className="flex justify-between items-start mb-2">
                 <div className="flex-1">
                   <p className="font-semibold text-gray-800">{q.question_text}</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {q.question_type === 'multiple_choice' ? '❓ Multiple Choice' : '📝 Free Text'} •
-                    {q.category && ` ${q.category} •`} {q.difficulty} {q.is_published ? '✅' : '⏱️'}
-                  </p>
+                  <div className="flex flex-wrap gap-2 items-center mt-2">
+                    <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                      {q.question_type === 'multiple_choice' ? '❓ Multiple Choice' : '📝 Free Text'}
+                    </span>
+                    {q.category && <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">{q.category}</span>}
+                    <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">{q.difficulty}</span>
+                    {q.is_published && <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">✅ Published</span>}
+                  </div>
+                  {q.courses && q.courses.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      <span className="text-xs text-gray-600 font-semibold">🎓 Courses:</span>
+                      {q.courses.map(c => (
+                        <span key={c.id} className="text-xs bg-green-50 text-green-700 border border-green-200 px-2 py-1 rounded">
+                          {c.title}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <button
                   onClick={() => handleDelete(q.id)}

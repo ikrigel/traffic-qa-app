@@ -23,9 +23,25 @@ export async function GET(request: NextRequest) {
 
     if (oError) throw oError;
 
+    const { data: coursesData, error: cError } = await supabase
+      .from('course_admin_questions')
+      .select('admin_question_id, courses(id, title)');
+
+    if (cError) throw cError;
+
+    const coursesByQuestion = new Map<string, any[]>();
+    coursesData?.forEach(cq => {
+      const courses = coursesByQuestion.get(cq.admin_question_id) || [];
+      if (cq.courses) {
+        courses.push(cq.courses);
+      }
+      coursesByQuestion.set(cq.admin_question_id, courses);
+    });
+
     const enriched = questions?.map(q => ({
       ...q,
       options: options?.filter(o => o.question_id === q.id) || [],
+      courses: coursesByQuestion.get(q.id) || [],
     })) || [];
 
     return NextResponse.json({ questions: enriched });

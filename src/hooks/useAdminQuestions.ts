@@ -16,6 +16,7 @@ export interface AdminQuestion {
   created_by?: string;
   created_at?: string;
   options?: QuestionOption[];
+  courses?: Array<{ id: string; title: string }>;
 }
 
 export function useAdminQuestions() {
