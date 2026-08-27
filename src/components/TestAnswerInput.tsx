@@ -91,18 +91,38 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
         stream.getTracks().forEach(track => track.stop());
       } catch (err: any) {
         console.error('[VOICE] ❌ getUserMedia failed:', err.name, err.message);
+
+        // Detect Permissions Policy violations
+        const isPermissionsPolicyViolation = err.message?.includes('Permissions policy') ||
+                                            err.message?.includes('not allowed in this document');
+
         const errorMap: Record<string, string> = {
-          'NotAllowedError': 'Permission denied - please allow microphone access when prompted',
+          'NotAllowedError': isPermissionsPolicyViolation
+            ? '🔐 Permissions Policy blocks microphone access. This is a server/security policy issue, not a browser permission issue.'
+            : 'Permission denied - please allow microphone access when prompted',
           'NotFoundError': 'No microphone found on this device',
           'NotReadableError': 'Microphone is in use by another application',
           'SecurityError': 'HTTPS required for microphone access (or localhost for development)',
           'AbortError': 'Microphone request was aborted',
         };
+
         const userMessage = errorMap[err.name] || `Microphone access failed: ${err.message}`;
         setVoiceError(userMessage);
-        if (err.name === 'NotAllowedError' || err.name === 'SecurityError') {
+
+        // Only show guide for actual permission issues, not policy violations
+        if ((err.name === 'NotAllowedError' && !isPermissionsPolicyViolation) || err.name === 'SecurityError') {
           setShowPermissionGuide(true);
         }
+
+        console.log('[VOICE] Error diagnosis:', {
+          errorName: err.name,
+          isPermissionsPolicyViolation,
+          fullMessage: err.message,
+          hint: isPermissionsPolicyViolation
+            ? 'Check if page is in iframe (needs allow="microphone") or if server has Permissions-Policy header'
+            : 'Standard permission or security error'
+        });
+
         return;
       }
 

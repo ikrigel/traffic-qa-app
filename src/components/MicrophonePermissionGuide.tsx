@@ -137,6 +137,17 @@ export default function MicrophonePermissionGuide({ isOpen, onClose, onRetry }: 
           </button>
         </div>
 
+        {/* Permissions Policy Notice */}
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 mt-4">
+          <p className="text-xs text-red-900 dark:text-red-100 font-semibold mb-2">🔐 If permission is enabled but still blocked:</p>
+          <p className="text-xs text-red-800 dark:text-red-200 break-words">
+            This may be a <strong>Permissions Policy</strong> issue (server-level security policy). Check:
+            <br />• Is this page in an iframe? (needs <code className="bg-red-100 dark:bg-red-800 px-1 rounded">allow="microphone"</code>)
+            <br />• Browser DevTools → Console for &quot;Permissions policy violation&quot;
+            <br />• Contact site administrator if issue persists
+          </p>
+        </div>
+
         {/* Footer */}
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-4 text-center break-words">
           Need more help? Make sure your browser is up to date and try a different browser if this doesn&#39;t work.
