@@ -19,9 +19,13 @@ class ConsoleInterceptor {
   private maxLogs = 1000;
   private currentLevel: LogLevel = 'debug';
   private originalConsole = { ...console };
+  private initialized = false;
 
   constructor() {
-    this.setupInterceptors();
+    if (typeof window !== 'undefined') {
+      this.setupInterceptors();
+      this.initialized = true;
+    }
   }
 
   private setupInterceptors() {
@@ -131,16 +135,19 @@ class ConsoleInterceptor {
   }
 
   subscribe(listener: ConsoleListener): () => void {
+    if (!this.initialized) return () => {};
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   }
 
   getLogs(level?: LogLevel): LogEntry[] {
+    if (!this.initialized) return [];
     if (!level) return [...this.logs];
     return this.logs.filter(log => log.level === level || this.meetsLevelThreshold(log.level));
   }
 
   setLevel(level: LogLevel) {
+    if (!this.initialized) return;
     this.currentLevel = level;
   }
 
@@ -149,6 +156,7 @@ class ConsoleInterceptor {
   }
 
   clear() {
+    if (!this.initialized) return;
     this.logs = [];
     this.notifyListeners({ timestamp: new Date(), level: 'info', source: 'system', message: 'Logs cleared' });
   }
