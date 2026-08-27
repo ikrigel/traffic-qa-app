@@ -164,11 +164,22 @@ export default function UnifiedLogsPanel() {
 
     setDeleting(true);
     try {
+      // Filter for server logs only and strip the "server-" prefix
+      const serverLogIds = ids
+        .filter(id => id.startsWith('server-'))
+        .map(id => id.replace(/^server-/, ''));
+
+      if (serverLogIds.length === 0) {
+        alert('⚠️ Only server logs can be deleted (client logs are temporary)');
+        setDeleting(false);
+        return;
+      }
+
       const response = await fetch('/api/admin/logs/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ logIds: ids }),
+        body: JSON.stringify({ logIds: serverLogIds }),
       });
       if (!response.ok) {
         const errData = await response.json();
