@@ -72,31 +72,37 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
         console.log('[VOICE] ✅ Browser tab has focus');
       }
 
-      // Check Permissions API state
+      // Check Permissions API state (informational only - not reliable)
       if (navigator.permissions?.query) {
         try {
           const result = await navigator.permissions.query({ name: 'microphone' as PermissionName });
-          console.log('[VOICE] Permissions API microphone state:', result.state);
-          if (result.state === 'denied') {
-            setVoiceError('Microphone permission is denied. Please allow access in browser settings.');
-            setShowPermissionGuide(true);
-            return;
-          }
+          console.log('[VOICE] Permissions API microphone state:', result.state, '(informational only)');
         } catch (err) {
           console.warn('[VOICE] Could not query Permissions API:', err);
         }
       }
 
-      // Test getUserMedia first to ensure OS-level access works
+      // Test getUserMedia first - this is the REAL test of microphone access
+      // The Permissions API can be unreliable, but getUserMedia will definitively tell us if access works
       try {
-        console.log('[VOICE] Testing getUserMedia access...');
+        console.log('[VOICE] Testing getUserMedia access (real microphone test)...');
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        console.log('[VOICE] ✅ getUserMedia succeeded - microphone is accessible');
+        console.log('[VOICE] ✅ getUserMedia succeeded - microphone is accessible and working');
         stream.getTracks().forEach(track => track.stop());
       } catch (err: any) {
         console.error('[VOICE] ❌ getUserMedia failed:', err.name, err.message);
-        setVoiceError(`Microphone access failed: ${err.message}. This may be an OS-level permission issue.`);
-        setShowPermissionGuide(true);
+        const errorMap: Record<string, string> = {
+          'NotAllowedError': 'Permission denied - please allow microphone access when prompted',
+          'NotFoundError': 'No microphone found on this device',
+          'NotReadableError': 'Microphone is in use by another application',
+          'SecurityError': 'HTTPS required for microphone access (or localhost for development)',
+          'AbortError': 'Microphone request was aborted',
+        };
+        const userMessage = errorMap[err.name] || `Microphone access failed: ${err.message}`;
+        setVoiceError(userMessage);
+        if (err.name === 'NotAllowedError' || err.name === 'SecurityError') {
+          setShowPermissionGuide(true);
+        }
         return;
       }
 

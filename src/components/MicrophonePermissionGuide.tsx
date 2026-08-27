@@ -92,7 +92,7 @@ export default function MicrophonePermissionGuide({ isOpen, onClose, onRetry }: 
                 <span className="flex-shrink-0 w-6 h-6 bg-indigo-600 text-white rounded-full flex items-center justify-center text-xs font-bold">
                   {idx + 1}
                 </span>
-                <span>{step}</span>
+                <span className="break-words overflow-wrap-break-word">{step}</span>
               </li>
             ))}
           </ol>
@@ -104,7 +104,7 @@ export default function MicrophonePermissionGuide({ isOpen, onClose, onRetry }: 
             <p className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">🌐 Browser-Specific:</p>
             <div className="space-y-1">
               {current.browsers.map((browser, idx) => (
-                <div key={idx} className="text-xs text-blue-800 dark:text-blue-200">
+                <div key={idx} className="text-xs text-blue-800 dark:text-blue-200 break-words">
                   <span className="font-semibold">{browser.name}:</span> {browser.steps}
                 </div>
               ))}
@@ -138,7 +138,7 @@ export default function MicrophonePermissionGuide({ isOpen, onClose, onRetry }: 
         </div>
 
         {/* Footer */}
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-4 text-center">
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-4 text-center break-words">
           Need more help? Make sure your browser is up to date and try a different browser if this doesn&#39;t work.
         </p>
       </div>
