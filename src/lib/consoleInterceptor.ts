@@ -78,7 +78,7 @@ class ConsoleInterceptor {
       const url = typeof args[0] === 'string' ? args[0] : args[0]?.url || 'unknown';
       const startTime = performance.now();
       try {
-        const response = await originalFetch(...args);
+        const response = await originalFetch.apply(window, args as Parameters<typeof fetch>);
         const duration = performance.now() - startTime;
         this.addLog('network', 'fetch', [`${response.status} ${response.statusText}`], {
           url,
