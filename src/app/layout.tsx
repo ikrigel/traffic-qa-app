@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Script from 'next/script';
 import '../styles/globals.css';
 import PreferencesProvider from '@/components/PreferencesProvider';
+import ConsoleInitializer from '@/components/ConsoleInitializer';
 
 export const metadata: Metadata = {
   title: 'Traffic Laws Q&A',
@@ -23,6 +24,7 @@ export default function RootLayout({
         <Script src="/theme-loader.js" strategy="beforeInteractive" />
       </head>
       <body className="bg-white dark:bg-gray-900">
+        <ConsoleInitializer />
         <PreferencesProvider>{children}</PreferencesProvider>
       </body>
     </html>
