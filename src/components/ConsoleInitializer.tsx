@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { consoleInterceptor } from '@/lib/consoleInterceptor';
+import '@/lib/consoleInterceptor';
 
 export default function ConsoleInitializer() {
   useEffect(() => {

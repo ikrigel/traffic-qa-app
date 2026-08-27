@@ -142,7 +142,7 @@ export default function MicrophonePermissionGuide({ isOpen, onClose, onRetry }: 
           <p className="text-xs text-red-900 dark:text-red-100 font-semibold mb-2">🔐 If permission is enabled but still blocked:</p>
           <p className="text-xs text-red-800 dark:text-red-200 break-words">
             This may be a <strong>Permissions Policy</strong> issue (server-level security policy). Check:
-            <br />• Is this page in an iframe? (needs <code className="bg-red-100 dark:bg-red-800 px-1 rounded">allow="microphone"</code>)
+            <br />• Is this page in an iframe? (needs <code className="bg-red-100 dark:bg-red-800 px-1 rounded">allow=&quot;microphone&quot;</code>)
             <br />• Browser DevTools → Console for &quot;Permissions policy violation&quot;
             <br />• Contact site administrator if issue persists
           </p>

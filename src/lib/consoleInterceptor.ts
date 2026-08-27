@@ -25,53 +25,51 @@ class ConsoleInterceptor {
   }
 
   private setupInterceptors() {
-    const self = this;
-
     // Intercept console.log
     console.log = (...args: any[]) => {
-      self.originalConsole.log(...args);
-      self.addLog('info', 'console', args);
+      this.originalConsole.log(...args);
+      this.addLog('info', 'console', args);
     };
 
     // Intercept console.debug
     console.debug = (...args: any[]) => {
-      self.originalConsole.debug(...args);
-      self.addLog('debug', 'console', args);
+      this.originalConsole.debug(...args);
+      this.addLog('debug', 'console', args);
     };
 
     // Intercept console.trace
     console.trace = (...args: any[]) => {
-      self.originalConsole.trace(...args);
+      this.originalConsole.trace(...args);
       const stack = new Error().stack || '';
-      self.addLog('trace', 'console', args, { stack });
+      this.addLog('trace', 'console', args, { stack });
     };
 
     // Intercept console.info
     console.info = (...args: any[]) => {
-      self.originalConsole.info(...args);
-      self.addLog('info', 'console', args);
+      this.originalConsole.info(...args);
+      this.addLog('info', 'console', args);
     };
 
     // Intercept console.warn
     console.warn = (...args: any[]) => {
-      self.originalConsole.warn(...args);
-      self.addLog('warn', 'console', args);
+      this.originalConsole.warn(...args);
+      this.addLog('warn', 'console', args);
     };
 
     // Intercept console.error
     console.error = (...args: any[]) => {
-      self.originalConsole.error(...args);
-      self.addLog('error', 'console', args);
+      this.originalConsole.error(...args);
+      this.addLog('error', 'console', args);
     };
 
     // Intercept global errors
     window.addEventListener('error', (event) => {
-      self.addLog('error', 'global', [event.message], { filename: event.filename, lineno: event.lineno });
+      this.addLog('error', 'global', [event.message], { filename: event.filename, lineno: event.lineno });
     });
 
     // Intercept unhandled promise rejections
     window.addEventListener('unhandledrejection', (event) => {
-      self.addLog('error', 'promise', [event.reason], { reason: event.reason });
+      this.addLog('error', 'promise', [event.reason], { reason: event.reason });
     });
 
     // Intercept fetch/network errors
@@ -82,7 +80,7 @@ class ConsoleInterceptor {
       try {
         const response = await originalFetch(...args);
         const duration = performance.now() - startTime;
-        self.addLog('network', 'fetch', [`${response.status} ${response.statusText}`], {
+        this.addLog('network', 'fetch', [`${response.status} ${response.statusText}`], {
           url,
           method: args[1]?.method || 'GET',
           status: response.status,
@@ -90,7 +88,7 @@ class ConsoleInterceptor {
         });
         return response;
       } catch (err) {
-        self.addLog('error', 'fetch', [String(err)], { url });
+        this.addLog('error', 'fetch', [String(err)], { url });
         throw err;
       }
     };
