@@ -36,7 +36,14 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
     const supported = !!SpeechRecognition;
     setVoiceSupported(supported);
 
-    console.log('[VOICE] Speech Recognition API:', supported ? '✅ Supported' : '❌ Not supported');
+    const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
+    const supportMsg = supported
+      ? '✅ Supported'
+      : isFirefox
+        ? '⚠️ Limited support in Firefox (use Chrome/Edge for full support)'
+        : '❌ Not supported';
+
+    console.log('[VOICE] Speech Recognition API:', supportMsg);
     console.log('[VOICE] Browser:', navigator.userAgent);
 
     return () => {
@@ -323,7 +330,7 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
               {loading ? '⏳ Grading...' : '📝 Submit Answer'}
             </button>
 
-            {voiceSupported && (
+            {voiceSupported ? (
               <button
                 onClick={isListening ? stopListening : startListening}
                 disabled={loading}
@@ -335,6 +342,14 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
                 title={voiceError || (isListening ? 'Stop listening' : 'Click to start voice input (Hebrew)')}
               >
                 {isListening ? '⏹️ Stop' : '🎤 Voice'}
+              </button>
+            ) : (
+              <button
+                disabled
+                title="Voice input not supported in this browser. Use Chrome/Edge for full support."
+                className="px-4 py-2 rounded-lg font-semibold bg-gray-300 text-gray-600 cursor-not-allowed"
+              >
+                🎤 Voice (Not supported)
               </button>
             )}
 
