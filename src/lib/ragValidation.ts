@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /**
  * RAG database validation and cleanup utilities
  * Ensures data integrity and consistency in the RAG document store

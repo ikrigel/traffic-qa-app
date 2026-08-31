@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { getServiceSupabase } from './supabase';
 import { ingestDocument } from './ragIngest';
 import { logError, appLog } from './logger';
