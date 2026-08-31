@@ -25,6 +25,7 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
   const [showPermissionGuide, setShowPermissionGuide] = useState(false);
   const recognitionRef = useRef<any>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastResultIndexRef = useRef(0);
   const [inputMethod, setInputMethod] = useState<'typed' | 'voice'>('typed');
   const [voiceSupported, setVoiceSupported] = useState(false);
 
@@ -188,29 +189,25 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
       };
 
       recognitionRef.current.onresult = (event: any) => {
-        let interimTranscript = '';
-        let finalTranscript = '';
+        console.log('[VOICE] 📝 Processing results, count:', event.results.length, 'from index:', event.resultIndex);
 
-        console.log('[VOICE] 📝 Processing results, count:', event.results.length);
+        // Only process the latest result to avoid duplication
+        const latestIdx = event.results.length - 1;
+        const latestResult = event.results[latestIdx];
+        const latestTranscript = latestResult?.[0]?.transcript || '';
+        const confidence = latestResult?.[0]?.confidence || 0;
 
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-          const confidence = event.results[i][0].confidence;
-
-          if (event.results[i].isFinal) {
-            finalTranscript += transcript + ' ';
-            console.log('[VOICE] ✅ Final:', transcript, `(${(confidence * 100).toFixed(0)}%)`);
+        if (latestTranscript.trim()) {
+          if (latestResult.isFinal) {
+            // Final result: add it to answer
+            setAnswer(prev => (prev ? prev + ' ' + latestTranscript.trim() : latestTranscript.trim()));
+            console.log('[VOICE] ✅ Final:', latestTranscript, `(${(confidence * 100).toFixed(0)}%)`);
+            console.log('[VOICE] 📤 Updated answer');
           } else {
-            interimTranscript += transcript;
-            console.log('[VOICE] 💬 Interim:', transcript);
+            // Interim result: show in console for debugging
+            console.log('[VOICE] 💬 Interim:', latestTranscript);
           }
-        }
-
-        const fullTranscript = finalTranscript || interimTranscript;
-        if (fullTranscript.trim()) {
-          setAnswer(prev => (prev ? prev + ' ' + fullTranscript.trim() : fullTranscript.trim()));
           setInputMethod('voice');
-          console.log('[VOICE] 📤 Updated answer');
         }
       };
 
