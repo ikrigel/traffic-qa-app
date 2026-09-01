@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { NextRequest, NextResponse } from 'next/server';
 import { embedQuery } from '@/lib/ragEmbedding';
 import { queryVectors } from '@/lib/pinecone';
