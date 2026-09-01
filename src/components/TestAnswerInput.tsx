@@ -26,7 +26,6 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
   const [showPermissionGuide, setShowPermissionGuide] = useState(false);
   const recognitionRef = useRef<any>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const lastResultIndexRef = useRef(0);
   const [inputMethod, setInputMethod] = useState<'typed' | 'voice'>('typed');
   const [voiceSupported, setVoiceSupported] = useState(false);
 
