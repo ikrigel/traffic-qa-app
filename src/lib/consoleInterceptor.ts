@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 'use client';
 
 export type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'network';
