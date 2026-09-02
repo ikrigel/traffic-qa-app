@@ -44,7 +44,7 @@ export default function VoiceRecordingIndicator({ isListening }: Props) {
 
         const updateAmplitude = () => {
           if (analyserRef.current && dataArrayRef.current) {
-            analyserRef.current.getByteFrequencyData(dataArrayRef.current);
+            analyserRef.current.getByteFrequencyData(dataArrayRef.current as Uint8Array);
             const average = dataArrayRef.current.reduce((a, b) => a + b) / dataArrayRef.current.length;
             setAmplitude(Math.min(100, (average / 255) * 100));
           }
