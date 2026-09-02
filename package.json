@@ -1,7 +1,7 @@
 {
   "name": "traffic-qa-app",
   "version": "1.15.0",
-  "description": "Interactive Q&A app for learning Israeli traffic laws",
+  "description": "Driving Instructor Academy - קורס למורים להוראת נהיגה - Interactive learning platform for driving instructors",
   "private": true,
   "scripts": {
     "dev": "next dev",

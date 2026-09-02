@@ -5,8 +5,8 @@ import PreferencesProvider from '@/components/PreferencesProvider';
 import ConsoleInitializer from '@/components/ConsoleInitializer';
 
 export const metadata: Metadata = {
-  title: 'Traffic Laws Q&A',
-  description: 'Study Israeli traffic laws for your driving exam',
+  title: 'Driving Instructor Academy - קורס למורים להוראת נהיגה',
+  description: 'Interactive learning platform for driving instructors in Israel',
   viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
 };
 
