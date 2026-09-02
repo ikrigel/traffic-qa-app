@@ -3,6 +3,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import MicrophonePermissionGuide from './MicrophonePermissionGuide';
+import VoiceRecordingIndicator from './VoiceRecordingIndicator';
 
 interface TestResult {
   verdict: 'correct' | 'partial' | 'incorrect';
@@ -311,6 +312,8 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             data-testid="answer-textarea"
           />
+
+          {isListening && <VoiceRecordingIndicator isListening={isListening} />}
 
           {voiceError && (
             <div className="p-3 bg-red-100 border border-red-300 rounded-lg text-red-700 text-sm">
