@@ -1,7 +1,7 @@
 {
   "name": "traffic-qa-app",
   "version": "1.15.0",
-  "description": "Driving License Exam Prep - קורס למידה להוראת נהיגה - Study Israeli traffic laws and prepare for driving exams",
+  "description": "Driving Instruction Hub - קורס למידה להוראת נהיגה - Learning platform for driving instruction students",
   "private": true,
   "scripts": {
     "dev": "next dev",

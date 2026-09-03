@@ -5,8 +5,8 @@ import PreferencesProvider from '@/components/PreferencesProvider';
 import ConsoleInitializer from '@/components/ConsoleInitializer';
 
 export const metadata: Metadata = {
-  title: 'Driving License Exam Prep - קורס למידה להוראת נהיגה',
-  description: 'Study Israeli traffic laws, prepare for driving exams, and master your driving instruction courses',
+  title: 'Driving Instruction Hub - קורס למידה להוראת נהיגה',
+  description: 'Interactive learning platform for driving instruction students in Israel',
   viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
 };
 
