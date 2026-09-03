@@ -1,7 +1,7 @@
 {
   "name": "traffic-qa-app",
   "version": "1.15.0",
-  "description": "Driving Instruction Hub - קורס למידה להוראת נהיגה - Learning platform for driving instruction students",
+  "description": "Driving Instructors Course - קורס מורי נהיגה - הכנה ולמידה לקורסים השונים בקורס מורי נהיגה",
   "private": true,
   "scripts": {
     "dev": "next dev",

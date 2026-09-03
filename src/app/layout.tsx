@@ -5,8 +5,8 @@ import PreferencesProvider from '@/components/PreferencesProvider';
 import ConsoleInitializer from '@/components/ConsoleInitializer';
 
 export const metadata: Metadata = {
-  title: 'Driving Instruction Hub - קורס למידה להוראת נהיגה',
-  description: 'Interactive learning platform for driving instruction students in Israel',
+  title: 'Driving Instructors Course - קורס מורי נהיגה',
+  description: 'קורס מורי נהיגה - הכנה ולמידה לקורסים השונים בקורס מורי נהיגה',
   viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
 };
 

@@ -1,5 +1,5 @@
-export const APP_NAME = 'Driving Instruction Hub';
-export const APP_DESCRIPTION = 'קורס למידה להוראת נהיגה - Interactive learning platform for driving instruction students in Israel';
+export const APP_NAME = 'Driving Instructors Course';
+export const APP_DESCRIPTION = 'קורס מורי נהיגה - הכנה ולמידה לקורסים השונים בקורס מורי נהיגה';
 export const APP_VERSION = '1.15.0';
 export const AUTHOR = 'Traffic Laws Community';
 
