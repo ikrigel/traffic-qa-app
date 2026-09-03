@@ -1,5 +1,5 @@
-export const APP_NAME = 'Driving Instructor Academy';
-export const APP_DESCRIPTION = 'קורס למורים להוראת נהיגה - Interactive learning platform for driving instructors';
+export const APP_NAME = 'Driving License Exam Prep';
+export const APP_DESCRIPTION = 'קורס למידה להוראת נהיגה - Study Israeli traffic laws, prepare for driving exams, and master your driving courses';
 export const APP_VERSION = '1.15.0';
 export const AUTHOR = 'Traffic Laws Community';
 
