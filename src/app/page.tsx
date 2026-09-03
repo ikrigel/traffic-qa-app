@@ -13,6 +13,7 @@ import TutorModal from '@/components/TutorModal';
 import UserProgressDisplay from '@/components/UserProgressDisplay';
 import { COURSES, getCourseQuestions } from '@/lib/questions';
 import { downloadPDF } from '@/lib/pdfGenerator';
+import { APP_NAME, APP_DESCRIPTION } from '@/lib/constants';
 
 export default function Home() {
   const { user, loading, login, logout } = useAuth();
@@ -58,8 +59,8 @@ export default function Home() {
       <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex justify-between items-center gap-2">
           <div className="flex-1 min-w-0">
-            <h1 className="text-lg sm:text-2xl font-bold text-blue-600 dark:text-blue-400 truncate">Traffic Laws Q&A</h1>
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 line-clamp-1">קורס 54 - דרכים 2000 - פותח על ידי יגאל קריגל</p>
+            <h1 className="text-lg sm:text-2xl font-bold text-blue-600 dark:text-blue-400 truncate">{APP_NAME}</h1>
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 line-clamp-1">{APP_DESCRIPTION}</p>
           </div>
           <div className="flex gap-1 sm:gap-2">
             {user && courseQuestions.length > 0 && (
@@ -127,10 +128,10 @@ export default function Home() {
       <div className="max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-12">
         <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 md:p-8 lg:p-12">
           <h2 className="text-2xl sm:text-3xl font-bold text-center mb-2 sm:mb-3 text-gray-800">
-            Traffic Laws Q&A
+            {APP_NAME}
           </h2>
           <p className="text-center text-gray-600 mb-6 sm:mb-8 md:mb-12 text-base sm:text-lg">
-            Study Israeli traffic laws for your driving exam
+            {APP_DESCRIPTION}
           </p>
 
           {!user ? (
