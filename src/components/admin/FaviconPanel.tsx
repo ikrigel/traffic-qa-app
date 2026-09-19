@@ -1,14 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-
-interface AppSettings {
-  favicon_url?: string;
-  app_theme_color?: string;
-}
+import Image from 'next/image';
 
 export default function FaviconPanel() {
-  const [settings, setSettings] = useState<AppSettings>({});
   const [faviconUrl, setFaviconUrl] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -24,7 +19,6 @@ export default function FaviconPanel() {
       const res = await fetch('/api/admin/settings');
       const data = await res.json();
       if (data.success) {
-        setSettings(data.settings);
         setFaviconUrl(data.settings.favicon_url || '');
         setPreviewUrl(data.settings.favicon_url || '');
       }
@@ -72,8 +66,6 @@ export default function FaviconPanel() {
       const data = await res.json();
       if (data.success) {
         setMessage('✅ Favicon updated successfully');
-        setSettings(prev => ({ ...prev, favicon_url: faviconUrl }));
-        // Update actual favicon in the document
         updateFaviconInDOM(faviconUrl);
         setTimeout(() => setMessage(''), 3000);
       } else {
@@ -114,13 +106,13 @@ export default function FaviconPanel() {
           <p className="text-sm font-medium text-gray-700 mb-3">Current Favicon Preview</p>
           <div className="flex items-center gap-4">
             {previewUrl && (
-              <div className="w-16 h-16 bg-white rounded border border-gray-300 flex items-center justify-center overflow-hidden">
+              <div className="w-16 h-16 bg-white rounded border border-gray-300 flex items-center justify-center overflow-hidden relative">
                 {previewUrl.startsWith('data:') ? (
-                  <img src={previewUrl} alt="favicon preview" className="w-full h-full" />
+                  <Image src={previewUrl} alt="favicon preview" fill className="object-cover" />
                 ) : previewUrl.endsWith('.svg') ? (
-                  <img src={previewUrl} alt="favicon preview" className="w-8 h-8" />
+                  <Image src={previewUrl} alt="favicon preview" width={32} height={32} className="w-8 h-8" />
                 ) : (
-                  <img src={previewUrl} alt="favicon preview" className="w-full h-full" />
+                  <Image src={previewUrl} alt="favicon preview" fill className="object-cover" />
                 )}
               </div>
             )}
