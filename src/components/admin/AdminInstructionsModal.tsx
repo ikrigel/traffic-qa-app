@@ -125,6 +125,19 @@ export default function AdminInstructionsModal({ isOpen, onClose }: AdminInstruc
             </ul>
           </section>
 
+          {/* Settings Section */}
+          <section>
+            <h3 className="text-base sm:text-lg font-bold text-indigo-600 mb-2 sm:mb-3">⚙️ Settings Tab</h3>
+            <p className="text-sm sm:text-base text-gray-700 mb-2 sm:mb-3 break-words">Customize app appearance and branding</p>
+            <ul className="space-y-1 sm:space-y-2 text-xs sm:text-sm text-gray-700 ml-2 sm:ml-4">
+              <li className="break-words">✅ <strong>Change favicon</strong> - Upload a custom app icon</li>
+              <li className="break-words">✅ <strong>Upload image file</strong> - PNG, JPEG, SVG, or ICO format</li>
+              <li className="break-words">✅ <strong>Use external URL</strong> - Link to an external favicon</li>
+              <li className="break-words">✅ <strong>Preview before saving</strong> - See how it looks</li>
+              <li className="break-words">💡 <strong>Tip:</strong> SVG is recommended for best scalability and small file size</li>
+            </ul>
+          </section>
+
           {/* Best Practices */}
           <section className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
             <h3 className="text-base sm:text-lg font-bold text-blue-900 mb-2 sm:mb-3">💡 Best Practices</h3>

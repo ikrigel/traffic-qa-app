@@ -12,8 +12,9 @@ import CourseManagementPanel from './CourseManagementPanel';
 import MultipleChoiceQuestionsPanel from './MultipleChoiceQuestionsPanel';
 import DocumentSourcesPanel from './DocumentSourcesPanel';
 import AdminInstructionsModal from './AdminInstructionsModal';
+import FaviconPanel from './FaviconPanel';
 
-type TabType = 'users' | 'rag-docs' | 'logs' | 'evaluations' | 'ragas' | 'devkit' | 'courses' | 'questions' | 'sources';
+type TabType = 'users' | 'rag-docs' | 'logs' | 'evaluations' | 'ragas' | 'devkit' | 'courses' | 'questions' | 'sources' | 'settings';
 
 interface Props {
   user: AuthUser;
@@ -29,7 +30,7 @@ export default function AdminPanelContainer({ user }: Props) {
   // Load saved tab on mount
   useEffect(() => {
     const saved = localStorage.getItem(ADMIN_TAB_STORAGE_KEY) as TabType | null;
-    if (saved && ['users', 'rag-docs', 'logs', 'evaluations', 'ragas', 'devkit', 'courses', 'questions', 'sources'].includes(saved)) {
+    if (saved && ['users', 'rag-docs', 'logs', 'evaluations', 'ragas', 'devkit', 'courses', 'questions', 'sources', 'settings'].includes(saved)) {
       setActiveTab(saved);
     }
   }, []);
@@ -50,6 +51,7 @@ export default function AdminPanelContainer({ user }: Props) {
     { id: 'evaluations', label: 'Evaluations', icon: '🤖', visible: true },
     { id: 'ragas', label: 'RAGAS Tester', icon: '🧪', visible: isSuperAdmin },
     { id: 'devkit', label: 'DevKit Console', icon: '🖥️', visible: isSuperAdmin },
+    { id: 'settings', label: 'Settings', icon: '⚙️', visible: isSuperAdmin },
   ];
 
   return (
@@ -97,6 +99,7 @@ export default function AdminPanelContainer({ user }: Props) {
         {activeTab === 'evaluations' && <RagEvaluationPanel />}
         {activeTab === 'ragas' && isSuperAdmin && <RagasEvaluationPanel />}
         {activeTab === 'devkit' && isSuperAdmin && <DevkitConsolePanel />}
+        {activeTab === 'settings' && isSuperAdmin && <FaviconPanel />}
       </div>
 
       {/* Instructions Modal */}
