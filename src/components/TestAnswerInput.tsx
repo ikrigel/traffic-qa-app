@@ -4,6 +4,7 @@
 import { useState, useRef, useEffect } from 'react';
 import MicrophonePermissionGuide from './MicrophonePermissionGuide';
 import VoiceRecordingIndicator from './VoiceRecordingIndicator';
+import { translateSymbols } from '@/lib/symbolTranslator';
 
 interface TestResult {
   verdict: 'correct' | 'partial' | 'incorrect';
@@ -48,12 +49,29 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
     console.log('[VOICE] Speech Recognition API:', supportMsg);
     console.log('[VOICE] Browser:', navigator.userAgent);
 
+    // Add window focus listeners to stop recording when app loses focus
+    const handleFocus = () => {
+      console.log('[VOICE] Window focus regained');
+    };
+
+    const handleBlur = () => {
+      console.log('[VOICE] Window lost focus - stopping recording');
+      if (recognitionRef.current && isListening) {
+        stopListening();
+      }
+    };
+
+    window.addEventListener('blur', handleBlur);
+    window.addEventListener('focus', handleFocus);
+
     return () => {
+      window.removeEventListener('blur', handleBlur);
+      window.removeEventListener('focus', handleFocus);
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
     };
-  }, []);
+  }, [isListening]);
 
   useEffect(() => {
     console.log('[VOICE] Permission guide state changed:', { showPermissionGuide, voiceError });
@@ -137,20 +155,20 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
 
       recognitionRef.current = new SpeechRecognition();
       recognitionRef.current.lang = 'he-IL';
-      recognitionRef.current.continuous = false;
+      recognitionRef.current.continuous = true;
       recognitionRef.current.interimResults = true;
       recognitionRef.current.maxAlternatives = 1;
 
       recognitionRef.current.onstart = () => {
-        console.log('[VOICE] 🎤 Listening started');
+        console.log('[VOICE] 🎤 Listening started - click Stop button to finish');
         setIsListening(true);
         setVoiceError(null);
 
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
         timeoutRef.current = setTimeout(() => {
-          console.log('[VOICE] ⏱️ Timeout - stopping listening');
+          console.log('[VOICE] ⏱️ Max recording time reached (5 min) - stopping');
           stopListening();
-        }, 30000);
+        }, 300000);
       };
 
       recognitionRef.current.onend = () => {
@@ -195,10 +213,13 @@ export default function TestAnswerInput({ questionId, questionText, correctAnswe
         // Only process the latest result to avoid duplication
         const latestIdx = event.results.length - 1;
         const latestResult = event.results[latestIdx];
-        const latestTranscript = latestResult?.[0]?.transcript || '';
+        let latestTranscript = latestResult?.[0]?.transcript || '';
         const confidence = latestResult?.[0]?.confidence || 0;
 
         if (latestTranscript.trim()) {
+          // Translate symbol words to actual symbols (period → ., comma → ,, etc.)
+          latestTranscript = translateSymbols(latestTranscript);
+
           if (latestResult.isFinal) {
             // Final result: add it to answer
             setAnswer(prev => (prev ? prev + ' ' + latestTranscript.trim() : latestTranscript.trim()));
