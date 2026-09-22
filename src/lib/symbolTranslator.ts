@@ -30,6 +30,7 @@ const SYMBOL_MAP: Record<string, string> = {
   // Hebrew (transliterated)
   'nekuda': '.',
   'nkuda': '.',
+  'nkudah': '.',
   'tapuz': ',',
   'tapus': ',',
   'sheila': '?',
@@ -42,6 +43,11 @@ const SYMBOL_MAP: Record<string, string> = {
   'gash': '-',
   'geresh': "'",
   'gershayim': '"',
+  'shurah chadasha': '\n',
+  'shura chadasha': '\n',
+  'new line': '\n',
+  'נקודה': '.',
+  'שורה חדשה': '\n',
 
   // Common misspellings/alternatives
   'point': '.',
@@ -64,20 +70,31 @@ export function translateSymbols(text: string): string {
 
   // Replace symbol words with actual symbols
   Object.entries(SYMBOL_MAP).forEach(([word, symbol]) => {
+    // Escape special regex characters in the word
+    const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
     // Create regex patterns for whole words (case-insensitive)
+    // For Hebrew and other non-ASCII, use simpler boundary matching
     const patterns = [
-      new RegExp(`\\b${word}\\b`, 'gi'), // standalone word
-      new RegExp(`^${word}\\b`, 'gi'), // at start
-      new RegExp(`\\b${word}$`, 'gi'), // at end
+      new RegExp(`(^|\\s)${escapedWord}($|\\s)`, 'gi'), // surrounded by word boundaries or spaces
+      new RegExp(`^${escapedWord}($|\\s)`, 'gi'), // at start
+      new RegExp(`(^|\\s)${escapedWord}$`, 'gi'), // at end
     ];
 
     patterns.forEach(pattern => {
-      result = result.replace(pattern, symbol);
+      result = result.replace(pattern, (_match, prefix = '', suffix = '') => {
+        // Preserve the prefix and suffix spaces/boundaries
+        return (prefix || '') + symbol + (suffix || '');
+      });
     });
   });
 
-  // Clean up: remove duplicate spaces
-  result = result.replace(/\s+/g, ' ').trim();
+  // Clean up: remove duplicate spaces, but preserve newlines
+  result = result
+    .split('\n') // Split by newlines
+    .map(line => line.replace(/\s+/g, ' ').trim()) // Clean up each line
+    .join('\n') // Rejoin with newlines
+    .trim();
 
   return result;
 }
